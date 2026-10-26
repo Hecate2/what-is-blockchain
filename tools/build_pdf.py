@@ -16,22 +16,16 @@ BUILD = ROOT / "build"
 OUT_PDF = ROOT / "天枢账簿.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-# 章题（用于页眉右侧与书签），顺序即文中出现顺序
-CHAPTERS = [
-    "楔子　消失的账页",
-    "第 1 章　定魂印",
-    "第 2 章　剑意账印",
-    "第 3 章　开山夺脉",
-    "第 4 章　论功行签",
-    "第 5 章　万叉一会",
-    "第 6 章　心魔法阵",
-    "第 7 章　证链",
-    "第 8 章　问心魔劫",
-    "第 9 章　万界共阵",
-    "第 10 章　代价",
-    "尾声　一年后",
-    "参考文献",
-]
+def chapters() -> list[str]:
+    """章题直接从 README 的一级标题抽取，避免与正文脱节。"""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    out = []
+    for line in readme.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip()
+            if title and title != "天枢账簿":
+                out.append(title)
+    return out
 
 
 def md_to_fragment() -> str:
@@ -47,12 +41,21 @@ def md_to_fragment() -> str:
 
 
 def transform(frag: str) -> str:
-    # 1) 封面：第一个 <hr /> 之前的内容包进 .cover，并删除该 hr
-    first_hr = frag.find("<hr")
-    if first_hr != -1:
-        head, tail = frag[:first_hr], frag[first_hr:]
-        tail = re.sub(r"^<hr[^>]*>\s*", "", tail)
-        frag = '<div class="cover">\n' + head + "\n</div>\n" + tail
+    # 1) 封面与题记：以 <!--epigraph--> 标记切分，封面只留书名、副题、卷首图
+    open_m, close_m = "<!--epigraph-->", "<!--/epigraph-->"
+    if open_m in frag and close_m in frag:
+        head, rest = frag.split(open_m, 1)
+        body, tail = rest.split(close_m, 1)
+        frag = (
+            '<div class="cover">\n' + head + "\n</div>\n"
+            '<div class="epigraph">\n' + body + "\n</div>\n" + tail
+        )
+    else:  # 退路：以第一个 hr 为界
+        first_hr = frag.find("<hr")
+        if first_hr != -1:
+            head, tail = frag[:first_hr], frag[first_hr:]
+            tail = re.sub(r"^<hr[^>]*>\s*", "", tail)
+            frag = '<div class="cover">\n' + head + "\n</div>\n" + tail
 
     # 2) 独立图片段落 -> figure-block + 图题
     frag = re.sub(
@@ -69,8 +72,8 @@ def transform(frag: str) -> str:
         frag,
     )
 
-    # 4) 对话着色（中文弯引号只出现在正文文本中，安全）
-    frag = re.sub(r"“([^“”]{1,120})”", r'<em class="say">“\1”</em>', frag)
+    # 4) 整段引语：段首是中文引号的段落单独标注，供版式缩进
+    frag = re.sub(r'<p>“', r'<p class="say">“', frag)
 
     # 5) 正文引用标号 -> 链接；参考文献条目 -> 锚点
     frag = re.sub(r"\[(\d{1,2})\]", r'<a class="cite" href="#ref\1">[\1]</a>', frag)
@@ -94,6 +97,7 @@ def write_html(frag: str) -> pathlib.Path:
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<base href="{ROOT.as_uri()}/">
 <title>天枢账簿：什么是区块链？</title>
 <style>
 {css}
@@ -127,49 +131,90 @@ def chrome_to_pdf(html_path: pathlib.Path) -> None:
     )
 
 
-def chapter_starts(doc: fitz.Document) -> list[tuple[int, str]]:
-    """返回 [(页号0基, 章题)]，按页号升序。"""
+def chapter_starts(doc: fitz.Document, skip: int = 0) -> list[tuple[int, str]]:
+    """返回 [(页号0基, 章题)]。skip 用于跳过封面与卷目，避免误命中目录里的标题。"""
+    def norm(x: str) -> str:
+        return "".join(x.split()).replace("\u00b7", "·")
+
+    titles = chapters()
+    texts = [norm(doc[i].get_text()) for i in range(doc.page_count)]
     starts = []
-    cursor = 0
-    for title in CHAPTERS:
+    cursor = skip
+    for title in titles:
+        key = norm(title)
         for pno in range(cursor, doc.page_count):
-            if doc[pno].search_for(title):
+            if key in texts[pno]:
                 starts.append((pno, title))
                 cursor = pno
                 break
     return starts
 
 
-def stamp(pdf_path: pathlib.Path) -> None:
+WARM = (0.973, 0.953, 0.906)   # #f8f3e7
+INK = (0.17, 0.15, 0.13)
+FAINT = (0.78, 0.72, 0.62)
+RUBRIC = (0.71, 0.26, 0.18)    # 朱色
+
+TOC_PAGES = 1   # 卷目占几页
+FRONT_PAGES = 2  # 封面 + 题记：不排页眉页脚，也不编页码
+BODY_START = TOC_PAGES + FRONT_PAGES  # 正文第一页的 0 基下标
+
+
+def insert_toc_page(doc: fitz.Document, starts: list[tuple[int, str]]) -> None:
+    """在封面之后插入一页卷目。starts 为未插页时的章首页码。"""
+    page = doc.new_page(pno=1)
+    r = page.rect
+    page.draw_rect(r, color=None, fill=WARM, overlay=False)
+
+    title = "卷　目"
+    w = fitz.get_text_length(title, fontname="china-s", fontsize=17)
+    page.insert_text(((r.width - w) / 2, 108), title, fontname="china-s", fontsize=17, color=INK)
+    page.draw_line((90, 124), (r.width - 90, 124), color=RUBRIC, width=1.2)
+
+    y = 168
+    step = 27
+    left, right = 90, r.width - 90
+    for pno, name in starts:
+        # 封面与题记不编页码，所以卷目里的页码是「章首页的前一页之外」再减一
+        shown = str(pno - (FRONT_PAGES - 1))
+        pw = fitz.get_text_length(shown, fontname="helv", fontsize=10.5)
+        page.insert_text((left, y), name, fontname="china-s", fontsize=10.5, color=INK)
+        page.insert_text((right - pw, y), shown, fontname="helv", fontsize=10.5, color=INK)
+        tw = fitz.get_text_length(name, fontname="china-s", fontsize=10.5)
+        x = left + tw + 8
+        dot_end = right - pw - 8
+        while x < dot_end:
+            page.draw_circle((x, y - 3), 0.45, color=FAINT, fill=FAINT)
+            x += 5.5
+        y += step
+
+
+def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
     doc = fitz.open(pdf_path)
-    total = doc.page_count
-    starts = chapter_starts(doc)
-    warm = (0.973, 0.953, 0.906)  # #f8f3e7
-    ink = (0.17, 0.15, 0.13)
-    faint = (0.78, 0.72, 0.62)
+    starts = chapter_starts(doc, skip=1 + toc_pages)
     for i, page in enumerate(doc):
         r = page.rect
         # 暖纸底色垫在内容之下（封面也铺）
-        page.draw_rect(r, color=None, fill=warm, overlay=False)
-        if i == 0:
-            continue  # 封面不加页眉页脚
+        page.draw_rect(r, color=None, fill=WARM, overlay=False)
+        if i < BODY_START:
+            continue  # 封面、卷目、题记：不排页眉页脚，也不编页码
         chapter = ""
         for pno, title in starts:
             if pno <= i:
                 chapter = title
             else:
                 break
-        page.insert_text((56, 42), "天枢账簿", fontname="china-s", fontsize=8.5, color=ink)
+        page.insert_text((56, 42), "天枢账簿", fontname="china-s", fontsize=8.5, color=INK)
         if chapter:
             w = fitz.get_text_length(chapter, fontname="china-s", fontsize=8.5)
             page.insert_text(
-                (r.width - 56 - w, 42), chapter, fontname="china-s", fontsize=8.5, color=ink
+                (r.width - 56 - w, 42), chapter, fontname="china-s", fontsize=8.5, color=INK
             )
-        page.draw_line((56, 48), (r.width - 56, 48), color=faint, width=0.5)
-        footer = f"— {i + 1} —"
-        w = fitz.get_text_length(footer, fontname="china-s", fontsize=9)
+        page.draw_line((56, 48), (r.width - 56, 48), color=FAINT, width=0.5)
+        footer = f"— {i - BODY_START + 1} —"
+        w = fitz.get_text_length(footer, fontname="helv", fontsize=9)
         page.insert_text(
-            ((r.width - w) / 2, r.height - 32), footer, fontname="china-s", fontsize=9, color=ink
+            ((r.width - w) / 2, r.height - 32), footer, fontname="helv", fontsize=9, color=INK
         )
     tmp = pdf_path.with_suffix(".stamped.pdf")
     doc.save(tmp, garbage=3, deflate=True)
@@ -177,9 +222,9 @@ def stamp(pdf_path: pathlib.Path) -> None:
     tmp.replace(pdf_path)
 
 
-def build_outline(pdf_path: pathlib.Path) -> None:
+def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> None:
     doc = fitz.open(pdf_path)
-    starts = chapter_starts(doc)
+    starts = chapter_starts(doc, skip=1 + toc_pages)
     toc = [[1, title, pno + 1] for pno, title in starts]
     if toc:
         doc.set_toc(toc)
@@ -193,10 +238,20 @@ def main() -> int:
     frag = transform(md_to_fragment())
     html_path = write_html(frag)
     chrome_to_pdf(html_path)
-    stamp(OUT_PDF)
-    build_outline(OUT_PDF)
+
+    toc_pages = 1
+    doc = fitz.open(OUT_PDF)
+    starts = chapter_starts(doc)
+    insert_toc_page(doc, starts)
+    tmp = OUT_PDF.with_suffix(".toc.pdf")
+    doc.save(tmp, garbage=3, deflate=True)
+    doc.close()
+    tmp.replace(OUT_PDF)
+
+    stamp(OUT_PDF, toc_pages=toc_pages)
+    build_outline(OUT_PDF, toc_pages=toc_pages)
     size_kb = OUT_PDF.stat().st_size // 1024
-    print(f"OK -> {OUT_PDF} ({size_kb} KB)")
+    print(f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章)")
     return 0
 
 
