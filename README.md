@@ -206,7 +206,7 @@
 
 > **【天枢阁·案卷】第二卷　定魂印与链账**
 >
-> 案卷翻到第二卷，说的是一枚印的脾气：定魂印就是哈希函数。天枢阁用的是 SHA-256，由美国国家标准与技术研究院（NIST）发布，标准号 FIPS 180-4[7]。“链账”就是区块链。每个区块的头部带着上一个区块的哈希，环环相扣。改一个区块，后面全部对不上。中本聪的原始论文里，这个结构叫“chain of blocks”[1]。
+> 案卷翻到第二卷，说的是一枚印的脾气：定魂印就是哈希函数。天枢阁用的是 SHA-256，由美国国家标准与技术研究院（NIST）发布，标准号 FIPS 180-4[2]。“链账”就是区块链。每个区块的头部带着上一个区块的哈希，环环相扣。改一个区块，后面全部对不上。中本聪的原始论文里，这个结构叫“chain of blocks”[1]。
 >
 > 雪崩效应可以当场量。把两个真实输入各算一遍 SHA-256：
 >
@@ -215,7 +215,7 @@
 >
 > 只多了一个句号，64 个字符里有 59 个变了。剩下 5 个撞在同一个位置，纯属运气。哈希的设计目标就是让“牵一发动全身”成为铁律。
 >
-> 默克尔树是链账的兄弟结构。Ralph Merkle 在 1979 年提出，用来把“一页账”压缩成“一枚印”，让校账不必搬运整本账[33]。通俗讲解见开源书《精通比特币》[2]。
+> 默克尔树是链账的兄弟结构。Ralph Merkle 在 1979 年提出，用来把“一页账”压缩成“一枚印”，让校账不必搬运整本账[3]。通俗讲解见开源书《精通比特币》[4]。
 
 ---
 
@@ -265,7 +265,7 @@
 
 我愣了。二次函数我只见过课本上的抛物线。这条弯钩一样的东西，居然是个方程。
 
-“x 和 y 各取一个数，左边是 y 的平方，右边是 x 的立方加 7，所有满足的点连起来，就是它。”她把剑穗拨到耳后，“真实算账的时候，数不随便取，是模一个大质数 p。像钟表，走到 p 就回 0。曲线绕着钟面绕，绕出来的点有限，可多到数不清。这条曲线叫 secp256k1，参数是别人公布的[8]，全世界都在用。”
+“x 和 y 各取一个数，左边是 y 的平方，右边是 x 的立方加 7，所有满足的点连起来，就是它。”她把剑穗拨到耳后，“真实算账的时候，数不随便取，是模一个大质数 p。像钟表，走到 p 就回 0。曲线绕着钟面绕，绕出来的点有限，可多到数不清。这条曲线叫 secp256k1，参数是别人公布的[5]，全世界都在用。”
 
 ![剑脊：墙上一条曲线，P 与 Q 连线，第三个交点翻过横轴就是 P+Q](img/fig03_jianfeng.svg)
 
@@ -349,13 +349,13 @@
 
 > **【天枢阁·案卷】第三卷　剑意账印**
 >
-> 第三卷记的是人的破口，不在算路，在手。剑意就是私钥，剑纹就是公钥，盖印就是数字签名。天枢阁用的这套算路，现实里叫 ECDSA 椭圆曲线数字签名算法，标准见 NIST FIPS 186-5[10]。曲线 secp256k1 的参数由 Certicom 公布[8]，基础算法见 IETF RFC 6090[9]。
+> 第三卷记的是人的破口，不在算路，在手。剑意就是私钥，剑纹就是公钥，盖印就是数字签名。天枢阁用的这套算路，现实里叫 ECDSA 椭圆曲线数字签名算法，标准见 NIST FIPS 186-5[6]。曲线 secp256k1 的参数由 Certicom 公布[5]，基础算法见 IETF RFC 6090[7]。
 >
 > “正向易、反向难”有个学名，叫椭圆曲线离散对数问题：给定基点和落点，反推跳的次数，目前没有已知的高效算法。安全性就押在这句话上。
 >
-> 签名要用一个随机数，术语叫 nonce。同一个 nonce 签了两笔不同的账，两条签名方程一减，nonce 就露出来。nonce 露出来，私钥就能解出来。RFC 6979 规定了确定性 nonce 生成的办法，就是为了堵这个洞[31]。
+> 签名要用一个随机数，术语叫 nonce。同一个 nonce 签了两笔不同的账，两条签名方程一减，nonce 就露出来。nonce 露出来，私钥就能解出来。RFC 6979 规定了确定性 nonce 生成的办法，就是为了堵这个洞[8]。
 >
-> 天枢阁的印房不换磨石，比 nonce 复用还糟。一块磨石刻两道纹，等于两把钥匙磨成了同一副齿：纹对得上，人分不出。现实里对应的是一类随机源失效事故——设备启动时熵不够，两台机器生成了同一个私钥。2013 年安卓的 SecureRandom 出过一次这种错：随机数不够随机，当年生成的那批安卓钱包，私钥都可能被算出来，官方要求全部换地址[38]。
+> 天枢阁的印房不换磨石，比 nonce 复用还糟。一块磨石刻两道纹，等于两把钥匙磨成了同一副齿：纹对得上，人分不出。现实里对应的是一类随机源失效事故——设备启动时熵不够，两台机器生成了同一个私钥。2013 年安卓的 SecureRandom 出过一次这种错：随机数不够随机，当年生成的那批安卓钱包，私钥都可能被算出来，官方要求全部换地址[9]。
 >
 > 但这不是沈拾遗的护身符。账上的印是真的，他那天也确实按了手。两件事同时成立：有人能替他签，而他确实签了。签名证明的是“这一个私钥签过”，从来不证明“这一双手签过”。
 >
@@ -495,7 +495,7 @@
 >
 > 最长链为真就是中本聪共识。它带来两个后果：双花，同一笔钱在两条链上各花一次。51% 攻击，算力过半者可以重写近期账。顾振铎买断 11 条脉，对应的就是矿池集中化风险。
 >
-> 数字（截至 2026 年 10 月）：比特币全网算力约 1.08 ZH/s，也就是每秒约 10 的 21 次方次哈希[27]。年耗电约 138 TWh，口径来自剑桥大学替代金融中心 2025 年 4 月报告[24]。区块奖励现为 3.125 BTC，由 2024 年 4 月的第 4 次减半而来，总量封顶 2100 万枚。
+> 数字（截至 2026 年 10 月）：比特币全网算力约 1.08 ZH/s，也就是每秒约 10 的 21 次方次哈希[10]。年耗电约 138 TWh，口径来自剑桥大学替代金融中心 2025 年 4 月报告[11]。区块奖励现为 3.125 BTC，由 2024 年 4 月的第 4 次减半而来，总量封顶 2100 万枚。
 >
 > 凿山也确实养活了现实里一整条产业链：矿机、矿场、水电站。有人靠这个吃饭，吃了十几年。
 
@@ -621,13 +621,13 @@
 
 > **【天枢阁·案卷】第五卷　论功行签**
 >
-> 行签这一卷，改的是押注的东西。押修为封页就是权益证明（Proof of Stake，PoS）。以太坊 2022 年 9 月 15 日完成“合并”，改用这套机制，能耗下降约 99.95%，数据见以太坊基金会官网[4]。
+> 行签这一卷，改的是押注的东西。押修为封页就是权益证明（Proof of Stake，PoS）。以太坊 2022 年 9 月 15 日完成“合并”，改用这套机制，能耗下降约 99.95%，数据见以太坊基金会官网[12]。
 >
 > 削功对应 slashing。验证者对同一高度出两个互相冲突的区块，或者在不该表态时表态，质押的 ETH 会被罚没。
 >
-> 终局检查点对应 Casper FFG。以太坊把时间切成 slot 和 epoch：一个 slot 12 秒，32 个 slot 是一个 epoch，约 6.4 分钟。每个 epoch 结束时对检查点投一次票，连续两个 epoch 都拿到三分之二多数，检查点就被最终确认，正常情况下再也翻不动。两轮的门槛都是三分之二，不是过半。协议细节见 Buterin 与 Griffith 的 Casper 论文[5]与 Gasper 论文[6]。
+> 终局检查点对应 Casper FFG。以太坊把时间切成 slot 和 epoch：一个 slot 12 秒，32 个 slot 是一个 epoch，约 6.4 分钟。每个 epoch 结束时对检查点投一次票，连续两个 epoch 都拿到三分之二多数，检查点就被最终确认，正常情况下再也翻不动。两轮的门槛都是三分之二，不是过半。协议细节见 Buterin 与 Griffith 的 Casper 论文[13]与 Gasper 论文[14]。
 >
-> 数字（截至 2026 年 10 月）：以太坊活跃验证者约 97 万，质押约 3100 万 ETH[28]。
+> 数字（截至 2026 年 10 月）：以太坊活跃验证者约 97 万，质押约 3100 万 ETH[15]。
 >
 > 值得记一笔的是：PoS 的终局性是经济安全加协议规则的组合，不是数学定理。理论上烧掉足够多的本金仍能翻转历史，只是代价高到没人付得起。顾振铎输就输在，他攒的是算力，而新规矩罚的是本金。
 >
@@ -719,17 +719,17 @@
 >
 > 万叉一会那三天，堂上吵的是同一样东西：慢。三个方案，对应现实里三条提速路线。
 >
-> 灭香岭是 Solana 的历史证明（Proof of History，PoH）。它用一串连续哈希给事件盖时间戳，像一炷香烧出的灰，谁也无法倒着改。PoH 管的只是时间。它是一只公共时钟，谁说了算还得靠 Tower BFT。白皮书见 Yakovenko 2018[11]。
+> 灭香岭是 Solana 的历史证明（Proof of History，PoH）。它用一串连续哈希给事件盖时间戳，像一炷香烧出的灰，谁也无法倒着改。PoH 管的只是时间。它是一只公共时钟，谁说了算还得靠 Tower BFT。白皮书见 Yakovenko 2018[16]。
 >
-> 万木林是有向无环图（DAG）。Sui 的 Mysticeti 和它前一代的 Bullshark 都把交易先排成图，再让验证者投票定序。Mysticeti 的论文见 Babel 等 2023[13]，DAG 内存池的源头见 Danezis 等 2021[12]，Bullshark 见 Spiegelman 等 2022[37]。Sui 另有一层按“对象”切分的并行执行，互不相干的对象可以同时改，这一层见其官方文档[36]。
+> 万木林是有向无环图（DAG）。Sui 的 Mysticeti 和它前一代的 Bullshark 都把交易先排成图，再让验证者投票定序。Mysticeti 的论文见 Babel 等 2023[17]，DAG 内存池的源头见 Danezis 等 2021[18]，Bullshark 见 Spiegelman 等 2022[19]。Sui 另有一层按“对象”切分的并行执行，互不相干的对象可以同时改，这一层见其官方文档[20]。
 >
-> 都江堰动的是出块那一层。Conflux 用树图结构，让同时出的块都留下，再用一条主链把它们排成先后，交易仍按这个先后一条一条执行。论文见 Li 等 2018[14]。
+> 都江堰动的是出块那一层。Conflux 用树图结构，让同时出的块都留下，再用一条主链把它们排成先后，交易仍按这个先后一条一条执行。论文见 Li 等 2018[21]。
 >
 > 三条路线都在回答同一个问题：如何让更多交易同时进行，又不让账分成两本。它们都没有取消排队，只是把队切细，再用更重的共识把队尾焊死。
 >
 > 这就是不可能三角：去中心化、安全、速度，三者不能同时拉满。谁说自己三样都满分，谁在偷换定义。
 >
-> 数字（截至 2026 年 10 月）：Solana 官方标称峰值 65000 TPS，第三方实测常见 1000 到 3000 TPS[29]。Sui 官方测试峰值十余万 TPS，主网常见数百到数千。Conflux 官方标称 3000 到 6000 TPS。口径不同，别拿峰值当日常。
+> 数字（截至 2026 年 10 月）：Solana 官方标称峰值 65000 TPS，第三方实测常见 1000 到 3000 TPS[22]。Sui 官方测试峰值十余万 TPS，主网常见数百到数千。Conflux 官方标称 3000 到 6000 TPS。口径不同，别拿峰值当日常。
 
 ---
 
@@ -825,13 +825,13 @@
 
 > **【天枢阁·案卷】第七卷　心魔法阵**
 >
-> 纸人那一卷，讲的是把话写死之后会发生什么。赌约式神就是智能合约。契文是字节码，纸人是合约账户，灵力是 gas。智能合约跑在虚拟机上。以太坊的虚拟机叫 EVM，黄皮书见 Wood 2025 版[16]。
+> 纸人那一卷，讲的是把话写死之后会发生什么。赌约式神就是智能合约。契文是字节码，纸人是合约账户，灵力是 gas。智能合约跑在虚拟机上。以太坊的虚拟机叫 EVM，黄皮书见 Wood 2025 版[23]。
 >
-> 一笔转账的完整流程有五步。第一，签名。你用私钥签一笔交易，写明收款人、金额、gas 上限[18]。第二，广播。交易被送到内存池，等着打包。第三，打包。验证者挑交易，按 gas 价格排序。第四，执行。EVM 逐条跑字节码，每跑一条扣一点 gas。第五，落账。执行结果写进状态树，等终局检查点落锁。任何一步失败，整笔交易回滚，已经花掉的 gas 不退，没花完的退回。
+> 一笔转账的完整流程有五步。第一，签名。你用私钥签一笔交易，写明收款人、金额、gas 上限[24]。第二，广播。交易被送到内存池，等着打包。第三，打包。验证者挑交易，按 gas 价格排序。第四，执行。EVM 逐条跑字节码，每跑一条扣一点 gas。第五，落账。执行结果写进状态树，等终局检查点落锁。任何一步失败，整笔交易回滚，已经花掉的 gas 不退，没花完的退回。
 >
-> 重入攻击的根子在“先付钱，后销账”。合约调用外部地址，外部地址在钱到账后、账还没销的时候，再回调合约的取款函数。合约看见的余额还是旧的，于是再付一次。2016 年 The DAO 就是这样丢了约 360 万 ETH，最终导致以太坊硬分叉[26][32]。Solidity 的官方文档至今把“检查、生效、交互”列为防重入的顺序。
+> 重入攻击的根子在“先付钱，后销账”。合约调用外部地址，外部地址在钱到账后、账还没销的时候，再回调合约的取款函数。合约看见的余额还是旧的，于是再付一次。2016 年 The DAO 就是这样丢了约 360 万 ETH，最终导致以太坊硬分叉[25][26]。Solidity 的官方文档至今把“检查、生效、交互”列为防重入的顺序。
 >
-> 现实里的 gas 有价格，也有上限。EIP-1559 把手续费分成基础费和优先费，基础费烧掉，优先费给打包人[17]。式神的灵力只出不回，现实里的基础费直接销毁。两者都在做同一件事：让计算有代价。
+> 现实里的 gas 有价格，也有上限。EIP-1559 把手续费分成基础费和优先费，基础费烧掉，优先费给打包人[27]。式神的灵力只出不回，现实里的基础费直接销毁。两者都在做同一件事：让计算有代价。
 
 ---
 
@@ -981,7 +981,7 @@
 >
 > 路径长度是 log2(n)。3000 页的树，12 步。100 万页的树，20 步。账本越大，轻客户端越划算。这就是“轻”的含义：不保存全账，只保存根印，按需验路。
 >
-> 比特币的轻客户端用同样的办法验证交易是否在区块里。以太坊的默克尔帕特里夏树把账户、余额、代码、存储都压进一棵树，状态根写在区块头里[19]。你不必信任任何一个节点，只要信任根印和数学。
+> 比特币的轻客户端用同样的办法验证交易是否在区块里。以太坊的默克尔帕特里夏树把账户、余额、代码、存储都压进一棵树，状态根写在区块头里[28]。你不必信任任何一个节点，只要信任根印和数学。
 >
 > 但根印只证明“这页在树里”，不证明“这页是真的”。叶子可以是假的，只要所有人都同意把它写进树。默克尔树保证的是一致性，不是真实性。沈拾遗在洞底算出的三页，证明的是母本被改过，不是母本该写什么。
 >
@@ -1066,15 +1066,15 @@
 | 验证成本 | 极低，一枚印的事 | 低，但比 SNARK 慢 |
 | 可信设置 | 多半需要，设置时的秘密要销毁 | 不需要，随机公开参数即可 |
 | 抗量子 | 多数不抗 | 有基础 |
-| 代表 | Groth16[21] | zk-STARK[22] |
+| 代表 | Groth16[29] | zk-STARK[30] |
 
 > **【天枢阁·案卷】第九卷　问心魔劫**
 >
 > 问心魔劫那一卷，说的是怎么在不脱衣服的情况下证明身上有疤。问心魔劫就是零知识证明。证明者要向验证者证明“我知道一个秘密”，却不泄露秘密本身。铜镜只吐“是”或“否”，门后的人看不见证词。
 >
-> 零知识证明有三个性质。完整性：真话能证明。可靠性：假话证不成立。零知识：除了“这话是真的”，验证者什么都得不到[35]。
+> 零知识证明有三个性质。完整性：真话能证明。可靠性：假话证不成立。零知识：除了“这话是真的”，验证者什么都得不到[31]。
 >
-> 主流的两种做法是 SNARK 与 STARK。SNARK 的证明小，验证快，但常用的那几种（Groth16 在内）需要一次可信设置，设置时的秘密如果没销毁，证明者可以造假。STARK 不需要可信设置，证明大一些，验证慢一些，抗量子攻击的底子更好。Groth16 是 SNARK 的代表[21]，把这类证明从理论搬到通用计算机上的早期工作见 Ben-Sasson 等 2013[20]，ZK-STARK 的原始论文见 Ben-Sasson 等 2018[22]。
+> 主流的两种做法是 SNARK 与 STARK。SNARK 的证明小，验证快，但常用的那几种（Groth16 在内）需要一次可信设置，设置时的秘密如果没销毁，证明者可以造假。STARK 不需要可信设置，证明大一些，验证慢一些，抗量子攻击的底子更好。Groth16 是 SNARK 的代表[29]，把这类证明从理论搬到通用计算机上的早期工作见 Ben-Sasson 等 2013[32]，ZK-STARK 的原始论文见 Ben-Sasson 等 2018[30]。
 >
 > 零知识证明最容易被低估的用处是压缩。一笔复杂计算，证明者算一遍，生成一枚很小的证明。验证者只看证明，不必重算。以太坊的 ZK rollup 把上千笔交易压成一枚证明，主链只验证明，不逐笔执行。验证成本从“按交易量增长”变成“按证明数增长”。这就是验证性能的根本提升。
 >
@@ -1263,7 +1263,7 @@
 >
 > 机关钥那一卷，讲的是把良心外包出去。黑盒就是可信执行环境（Trusted Execution Environment，TEE）。鱼符信的是人，玉圭信的是数学，黑盒信的是“这块芯片里跑的东西，连它的主人也看不见”。做法是：芯片出厂时烧进一对密钥，私钥封在硅片里出不来。它给一段程序算一枚“远程证明”（attestation），说明“我跑的确实是这段代码，代码的哈希是这个”。对方验这枚证明，就等于验了这台机器的品行。
 >
-> 它的信任边界不在数学，在厂商和硅片。侧信道、固件漏洞、厂商自己的签名密钥泄露，都会把这条边界捅穿。Intel SGX 的机制与已知风险，见 Costan 与 Devadas 的系统梳理[34]。
+> 它的信任边界不在数学，在厂商和硅片。侧信道、固件漏洞、厂商自己的签名密钥泄露，都会把这条边界捅穿。Intel SGX 的机制与已知风险，见 Costan 与 Devadas 的系统梳理[33]。
 >
 > 三样东西的分工：鱼符贵在“大家都看得见”，黑盒贵在“什么都不用说”，玉圭贵在“跑得比谁都快”。哪一样都不神圣，每一样都有缝。
 
@@ -1459,9 +1459,9 @@
 >
 > 这一卷没有可破的。不可篡改有两面。一面是安全：谁也不能偷偷改历史。另一面是残忍：谁也修不了历史的错。天枢阁选了前者，就得吞下后者。
 >
-> 残忍的那一面很钝。英国一个男子 2013 年把装着钱包的旧硬盘当垃圾扔了，里头有 7500 枚比特币。此后十二年他反复申请挖开垃圾场，2025 年 1 月法院驳回了他的请求[25]。私钥丢了，币还在链上，谁也取不回来。链不会因为你可怜就把那笔钱退给你。
+> 残忍的那一面很钝。英国一个男子 2013 年把装着钱包的旧硬盘当垃圾扔了，里头有 7500 枚比特币。此后十二年他反复申请挖开垃圾场，2025 年 1 月法院驳回了他的请求[34]。私钥丢了，币还在链上，谁也取不回来。链不会因为你可怜就把那笔钱退给你。
 >
-> 现实里的区块链不是绝对不可篡改。2016 年 The DAO 被重入攻击偷走约 360 万 ETH，以太坊社区投票硬分叉，把被盗资金退回，旧链留在原地，成了以太坊经典（ETC）。分叉的依据是代码之外的社会共识。代码说“不可篡改”，人说“这次例外”[32]。
+> 现实里的区块链不是绝对不可篡改。2016 年 The DAO 被重入攻击偷走约 360 万 ETH，以太坊社区投票硬分叉，把被盗资金退回，旧链留在原地，成了以太坊经典（ETC）。分叉的依据是代码之外的社会共识。代码说“不可篡改”，人说“这次例外”[26]。
 >
 > 这件事的教训，不在于“区块链可以改”。改不改，最后是人定的。节点运行者、矿工、交易所、持币者，谁都能表态。表态的结果，就是新的账。所谓“去信任”，去的是对单一中介的信任，不是对社会的信任。
 >
@@ -1631,15 +1631,15 @@
 
 银行、法院、账房，都提供信任。你信它们，是因为它们有牌照、有警察、有历史。区块链换了一种做法：它把“谁说了算”变成“大家都能验”。一笔账写进去，成千上万台机器手里有同一份。你想改，得同时改掉大半，还得让所有人看不见。
 
-对人类软件生态来说，它最大的贡献，是提供了一个标准化的大规模可信执行环境。签名、计费、状态、终局、跨应用调用，全人类共用一套。你不需要认识对方，也不需要对方认识你。你只要验他的印，验他的证明，验他的状态根。智能合约把这套环境变成了公共的。以太坊白皮书把它叫“世界计算机”[3]，Szabo 在 1997 年就把“智能合约”写成了可执行的协议[15]。
+对人类软件生态来说，它最大的贡献，是提供了一个标准化的大规模可信执行环境。签名、计费、状态、终局、跨应用调用，全人类共用一套。你不需要认识对方，也不需要对方认识你。你只要验他的印，验他的证明，验他的状态根。智能合约把这套环境变成了公共的。以太坊白皮书把它叫“世界计算机”[35]，Szabo 在 1997 年就把“智能合约”写成了可执行的协议[36]。
 
-零知识证明是另一件事。它不只保护隐私，它根本性地提高了验证性能。执行和验证从此可以分开：会算的人算一次，会验的人只验一枚小证明。SNARK 把证明压到几百字节，STARK 把可信设置去掉[21][22]。Rollup 用这一枚证明，把上千笔交易压成一笔，主链只验证明，不逐笔重算[23]。
+零知识证明是另一件事。它不只保护隐私，它根本性地提高了验证性能。执行和验证从此可以分开：会算的人算一次，会验的人只验一枚小证明。SNARK 把证明压到几百字节，STARK 把可信设置去掉[29][30]。Rollup 用这一枚证明，把上千笔交易压成一笔，主链只验证明，不逐笔重算[37]。
 
 可它还是人造的。
 
 天枢阁烧了母本，账就永远真不了。区块链没有烧母本，它把母本交给了社会。社会可以分叉，可以回滚，可以投票，可以装看不见。代码写“不可篡改”，人说“这次例外”。
 
-链上还跑着约 3030 亿美元的稳定币，它们的信用不在链上，在链下的国债和银行账户里[30]。链能替你记账，替不了你担保。
+链上还跑着约 3030 亿美元的稳定币，它们的信用不在链上，在链下的国债和银行账户里[38]。链能替你记账，替不了你担保。
 
 天枢阁的 3000 年，靠的是榫卯、铜锁、印炉、机关鸢，是一代一代工匠调出来的公差。神仙一样都没帮上。区块链也一样。它靠的是有人付电费、有人开机、有人守着节点不睡。它不神圣，它有缝。缝在哪里，账上看得见。
 
@@ -1655,78 +1655,78 @@
 
 [1]　中本聪（Nakamoto S）. 比特币：一种点对点的电子现金系统（Bitcoin: A Peer-to-Peer Electronic Cash System）. 2008. https://bitcoin.org/bitcoin.pdf
 
-[2]　安东诺普洛斯（Antonopoulos A M），哈丁（Harding D A）. 精通比特币（Mastering Bitcoin），第 3 版. O'Reilly, 2023. 开源版见 https://github.com/bitcoinbook/bitcoinbook
+[2]　美国国家标准与技术研究院（NIST）. FIPS 180-4：安全哈希标准（SHA-2）. 2015. https://csrc.nist.gov/pubs/fips/180-4/upd1/final
 
-[3]　布特林（Buterin V）等. 以太坊白皮书（Ethereum Whitepaper）. 2014. https://ethereum.org/en/whitepaper/
+[3]　Merkle R C. 一种认证数字签名（A Certified Digital Signature）. CRYPTO 1989, LNCS 435, 218-238. https://doi.org/10.1007/0-387-34805-0_21
 
-[4]　以太坊基金会. 以太坊的能耗（Ethereum's energy consumption）. 数据来自 CCRI 2022 年报告. https://ethereum.org/en/energy-consumption/
+[4]　安东诺普洛斯（Antonopoulos A M），哈丁（Harding D A）. 精通比特币（Mastering Bitcoin），第 3 版. O'Reilly, 2023. 开源版见 https://github.com/bitcoinbook/bitcoinbook
 
-[5]　布特林（Buterin V），格里菲思（Griffith V）. Casper the Friendly Finality Gadget. arXiv:1710.09437, 2017（修订版 2019）. https://arxiv.org/abs/1710.09437
+[5]　Certicom Research. SEC 2：推荐椭圆曲线域参数（v2.0）. 2010. https://www.secg.org/sec2-v2.pdf
 
-[6]　Neu J, Hernandez D, Kamphefner T 等. Combining GHOST and Casper. arXiv:2003.03052, 2020. https://arxiv.org/abs/2003.03052
+[6]　NIST. FIPS 186-5：数字签名标准（DSS，含 ECDSA）. 2023. https://csrc.nist.gov/pubs/fips/186-5/final
 
-[7]　美国国家标准与技术研究院（NIST）. FIPS 180-4：安全哈希标准（SHA-2）. 2015. https://csrc.nist.gov/pubs/fips/180-4/upd1/final
+[7]　IETF. RFC 6090：椭圆曲线密码学基础算法. 2011. https://www.rfc-editor.org/rfc/rfc6090
 
-[8]　Certicom Research. SEC 2：推荐椭圆曲线域参数（v2.0）. 2010. https://www.secg.org/sec2-v2.pdf
+[8]　IETF. RFC 6979：基于确定性数字签名算法（DSA）和椭圆曲线数字签名算法（ECDSA）的确定性数字签名生成. 2013. https://www.rfc-editor.org/rfc/rfc6979
 
-[9]　IETF. RFC 6090：椭圆曲线密码学基础算法. 2011. https://www.rfc-editor.org/rfc/rfc6090
+[9]　Bitcoin.org. 安卓安全随机数缺陷导致私钥重复的公告（Android SecureRandom bug）. 2013. https://bitcoin.org/en/alert/2013-08-11-android
 
-[10]　NIST. FIPS 186-5：数字签名标准（DSS，含 ECDSA）. 2023. https://csrc.nist.gov/pubs/fips/186-5/final
+[10]　mempool.space. 比特币全网算力统计. https://mempool.space/api/v1/mining/hashrate/3d（数据截至 2026-10-26，约 1 ZH/s）
 
-[11]　雅科文科（Yakovenko A）. Solana：高性能区块链的新架构（Solana: A New Architecture for a High Performance Blockchain）. 2018. https://solana.com/solana-whitepaper.pdf
+[11]　剑桥大学替代金融中心（CCAF）. 数字挖矿产业报告（Digital Mining Industry Report）. 2025-04. https://www.jbs.cam.ac.uk/wp-content/uploads/2025/04/2025-04-cambridge-digital-mining-industry-report.pdf
 
-[12]　Danezis G, Kokoris-Kogias E, Sonnino A, Spiegelman A. Narwhal and Tusk：基于有向无环图的内存池与高效拜占庭容错共识. arXiv:2105.11827, 2021. https://arxiv.org/abs/2105.11827
+[12]　以太坊基金会. 以太坊的能耗（Ethereum's energy consumption）. 数据来自 CCRI 2022 年报告. https://ethereum.org/en/energy-consumption/
 
-[13]　Babel K, Chursin A, Danezis G 等. Mysticeti：逼近延迟极限的无证书有向无环图共识. arXiv:2310.14821, 2023. https://arxiv.org/abs/2310.14821
+[13]　布特林（Buterin V），格里菲思（Griffith V）. Casper the Friendly Finality Gadget. arXiv:1710.09437, 2017（修订版 2019）. https://arxiv.org/abs/1710.09437
 
-[14]　Li C, Li P, Zhou D 等. 把中本聪共识扩展到每秒数千笔交易（Scaling Nakamoto Consensus to Thousands of Transactions per Second）. arXiv:1805.03870, 2018. https://arxiv.org/abs/1805.03870
+[14]　Neu J, Hernandez D, Kamphefner T 等. Combining GHOST and Casper. arXiv:2003.03052, 2020. https://arxiv.org/abs/2003.03052
 
-[15]　萨博（Szabo N）. 在公共网络上形式化并保障交易关系（Formalizing and Securing Relationships on Public Networks）. First Monday, 1997, 2(9). https://doi.org/10.5210/fm.v2i9.548
+[15]　beaconcha.in. 以太坊验证者统计. https://www.beaconcha.in/validators（数据截至 2026-10-26，约 97 万活跃验证者，质押约 3100 万 ETH）
 
-[16]　伍德（Wood G）. 以太坊：安全去中心化的通用交易账本（黄皮书）. 上海版, 2025-02 修订. https://ethereum.github.io/yellowpaper/paper.pdf
+[16]　雅科文科（Yakovenko A）. Solana：高性能区块链的新架构（Solana: A New Architecture for a High Performance Blockchain）. 2018. https://solana.com/solana-whitepaper.pdf
 
-[17]　Buterin V, Conner E, Dudley R 等. EIP-1559：ETH 1.0 手续费市场改革（Final）. 2019. https://eips.ethereum.org/EIPS/eip-1559
+[17]　Babel K, Chursin A, Danezis G 等. Mysticeti：逼近延迟极限的无证书有向无环图共识. arXiv:2310.14821, 2023. https://arxiv.org/abs/2310.14821
 
-[18]　以太坊开发者文档：交易（Transactions）. https://ethereum.org/en/developers/docs/transactions/
+[18]　Danezis G, Kokoris-Kogias E, Sonnino A, Spiegelman A. Narwhal and Tusk：基于有向无环图的内存池与高效拜占庭容错共识. arXiv:2105.11827, 2021. https://arxiv.org/abs/2105.11827
 
-[19]　以太坊开发者文档：默克尔帕特里夏树（Patricia Merkle Trie）. https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/
+[19]　Spiegelman A, Giridharan N, Sonnino A 等. Bullshark：DAG 拜占庭协议实用化. arXiv:2201.05677, 2022. https://arxiv.org/abs/2201.05677
 
-[20]　Ben-Sasson E, Chiesa A, Tromer E, Virza M. 面向冯诺依曼架构的简洁非交互零知识证明. IACR ePrint 2013/879, 2013. https://eprint.iacr.org/2013/879
+[20]　Sui 文档：对象模型与并行执行（Object Model / Execution）. https://docs.sui.io/concepts/object-model
 
-[21]　Groth J. 配对非交互论证的大小（Groth16）. IACR ePrint 2016/260, 2016. https://eprint.iacr.org/2016/260
+[21]　Li C, Li P, Zhou D 等. 把中本聪共识扩展到每秒数千笔交易（Scaling Nakamoto Consensus to Thousands of Transactions per Second）. arXiv:1805.03870, 2018. https://arxiv.org/abs/1805.03870
 
-[22]　Ben-Sasson E, Bentov I, Horesh Y, Riabzev M. 可扩展、透明、后量子安全的计算完整性证明（ZK-STARK）. IACR ePrint 2018/046, 2018. https://eprint.iacr.org/2018/046
+[22]　Chainspect. 公链实测 TPS 统计. https://chainspect.app/dashboard（数据截至 2026-10）
 
-[23]　L2BEAT. 以太坊扩容链锁仓价值统计. https://l2beat.com/（数据截至 2026-10-26，约 455 亿美元）
+[23]　伍德（Wood G）. 以太坊：安全去中心化的通用交易账本（黄皮书）. 上海版, 2025-02 修订. https://ethereum.github.io/yellowpaper/paper.pdf
 
-[24]　剑桥大学替代金融中心（CCAF）. 数字挖矿产业报告（Digital Mining Industry Report）. 2025-04. https://www.jbs.cam.ac.uk/wp-content/uploads/2025/04/2025-04-cambridge-digital-mining-industry-report.pdf
+[24]　以太坊开发者文档：交易（Transactions）. https://ethereum.org/en/developers/docs/transactions/
 
-[25]　Fortune. 英国法官叫停从垃圾场取回存有约 7.5 亿美元比特币硬盘的行动. 2025-01-10. https://fortune.com/2025/01/10/uk-bitcoin-hard-drive-landfill-ruling/
+[25]　Atzei N, Bartoletti M, Cimoli T. 以太坊智能合约攻击综述（A Survey of Attacks on Ethereum Smart Contracts）. POST 2017. https://link.springer.com/chapter/10.1007/978-3-662-54455-6_6
 
-[26]　Atzei N, Bartoletti M, Cimoli T. 以太坊智能合约攻击综述（A Survey of Attacks on Ethereum Smart Contracts）. POST 2017. https://link.springer.com/chapter/10.1007/978-3-662-54455-6_6
+[26]　以太坊基金会. 以太坊历史：The DAO 与 2016 年硬分叉. https://ethereum.org/en/history/#dao-fork
 
-[27]　mempool.space. 比特币全网算力统计. https://mempool.space/api/v1/mining/hashrate/3d（数据截至 2026-10-26，约 1 ZH/s）
+[27]　Buterin V, Conner E, Dudley R 等. EIP-1559：ETH 1.0 手续费市场改革（Final）. 2019. https://eips.ethereum.org/EIPS/eip-1559
 
-[28]　beaconcha.in. 以太坊验证者统计. https://www.beaconcha.in/validators（数据截至 2026-10-26，约 97 万活跃验证者，质押约 3100 万 ETH）
+[28]　以太坊开发者文档：默克尔帕特里夏树（Patricia Merkle Trie）. https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/
 
-[29]　Chainspect. 公链实测 TPS 统计. https://chainspect.app/dashboard（数据截至 2026-10）
+[29]　Groth J. 配对非交互论证的大小（Groth16）. IACR ePrint 2016/260, 2016. https://eprint.iacr.org/2016/260
 
-[30]　DeFiLlama. 稳定币市值统计. https://defillama.com/stablecoins（数据截至 2026-10-26，约 3030 亿美元）
+[30]　Ben-Sasson E, Bentov I, Horesh Y, Riabzev M. 可扩展、透明、后量子安全的计算完整性证明（ZK-STARK）. IACR ePrint 2018/046, 2018. https://eprint.iacr.org/2018/046
 
-[31]　IETF. RFC 6979：基于确定性数字签名算法（DSA）和椭圆曲线数字签名算法（ECDSA）的确定性数字签名生成. 2013. https://www.rfc-editor.org/rfc/rfc6979
+[31]　以太坊开发者文档：零知识证明（Zero-knowledge proofs）. https://ethereum.org/en/zero-knowledge-proofs/
 
-[32]　以太坊基金会. 以太坊历史：The DAO 与 2016 年硬分叉. https://ethereum.org/en/history/#dao-fork
+[32]　Ben-Sasson E, Chiesa A, Tromer E, Virza M. 面向冯诺依曼架构的简洁非交互零知识证明. IACR ePrint 2013/879, 2013. https://eprint.iacr.org/2013/879
 
-[33]　Merkle R C. 一种认证数字签名（A Certified Digital Signature）. CRYPTO 1989, LNCS 435, 218-238. https://doi.org/10.1007/0-387-34805-0_21
+[33]　Costan V, Devadas S. Intel SGX 解析（Intel SGX Explained）. IACR ePrint 2016/086, 2016. https://eprint.iacr.org/2016/086
 
-[34]　Costan V, Devadas S. Intel SGX 解析（Intel SGX Explained）. IACR ePrint 2016/086, 2016. https://eprint.iacr.org/2016/086
+[34]　Fortune. 英国法官叫停从垃圾场取回存有约 7.5 亿美元比特币硬盘的行动. 2025-01-10. https://fortune.com/2025/01/10/uk-bitcoin-hard-drive-landfill-ruling/
 
-[35]　以太坊开发者文档：零知识证明（Zero-knowledge proofs）. https://ethereum.org/en/zero-knowledge-proofs/
+[35]　布特林（Buterin V）等. 以太坊白皮书（Ethereum Whitepaper）. 2014. https://ethereum.org/en/whitepaper/
 
-[36]　Sui 文档：对象模型与并行执行（Object Model / Execution）. https://docs.sui.io/concepts/object-model
+[36]　萨博（Szabo N）. 在公共网络上形式化并保障交易关系（Formalizing and Securing Relationships on Public Networks）. First Monday, 1997, 2(9). https://doi.org/10.5210/fm.v2i9.548
 
-[37]　Spiegelman A, Giridharan N, Sonnino A 等. Bullshark：DAG 拜占庭协议实用化. arXiv:2201.05677, 2022. https://arxiv.org/abs/2201.05677
+[37]　L2BEAT. 以太坊扩容链锁仓价值统计. https://l2beat.com/（数据截至 2026-10-26，约 455 亿美元）
 
-[38]　Bitcoin.org. 安卓安全随机数缺陷导致私钥重复的公告（Android SecureRandom bug）. 2013. https://bitcoin.org/en/alert/2013-08-11-android
+[38]　DeFiLlama. 稳定币市值统计. https://defillama.com/stablecoins（数据截至 2026-10-26，约 3030 亿美元）
 
 **关于数据时效**：链上数据天天在变。本文所有数字都标注了统计口径和日期，正文统一以“截至 2026 年 10 月”表述。比特币能耗数字采用剑桥大学 2025 年 4 月报告口径。Solana、Sui、Conflux 的性能数字均注明是官方宣称还是第三方实测。读者查证时，请以链接页面的最新数据为准。

@@ -35,6 +35,26 @@ def chapters() -> list[str]:
     return out
 
 
+def citation_order_problem(readme: str | None = None) -> str:
+    """参考文献编号必须是正文里第一次引用的先后。不合规就返回一句说明。
+
+    排版会把编号原样印在纸上，编号乱了读者就得来回翻，所以宁可让构建
+    失败，也不默默出一份乱序的 PDF。
+    """
+    if readme is None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    body = readme.partition("## 参考文献")[0]
+    order: list[int] = []
+    for m in re.finditer(r"\[(\d{1,2})\]", body):
+        n = int(m.group(1))
+        if n not in order:
+            order.append(n)
+    for i, n in enumerate(order):
+        if n != i + 1:
+            return f"正文第 {i + 1} 个出现的引用是 [{n}]，应为 [{i + 1}]"
+    return ""
+
+
 def rasterize_images() -> dict[str, str]:
     """把 SVG 预渲染成单张 JPEG。
 
@@ -397,6 +417,12 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> int:
 
 
 def main() -> int:
+    problem = citation_order_problem()
+    if problem:
+        print(f"参考文献编号不合规：{problem}", file=sys.stderr)
+        print("先跑 python3 tools/renumber_refs.py", file=sys.stderr)
+        return 1
+
     raster = rasterize_images()
     frag = transform(md_to_fragment(), raster)
     html_path = write_html(frag)
