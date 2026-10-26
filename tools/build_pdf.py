@@ -238,6 +238,70 @@ TOC_PAGES = 1   # 卷目占几页
 FRONT_PAGES = 2  # 封面 + 题记：不排页眉页脚，也不编页码
 BODY_START = TOC_PAGES + FRONT_PAGES  # 正文第一页的 0 基下标
 
+CITE_MAX_SIZE = 8.5   # 正文上标 [n] 的字号（.cite 是 7.6pt）
+REF_MIN_SIZE = 9.0    # 参考文献条目序号 [n] 的字号（.refnum 是 9.4pt）
+
+
+def citation_marks(page: fitz.Page) -> list[tuple[int, float, fitz.Rect]]:
+    """页面上每个 [n] 标号的（编号, 字号, 矩形）。字号用来分辨正文上标与文献序号。"""
+    found: list[tuple[int, float, fitz.Rect]] = []
+    for block in page.get_text("rawdict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                chars = span["chars"]
+                text = "".join(c["c"] for c in chars)
+                for m in re.finditer(r"\[(\d{1,2})\]", text):
+                    box = fitz.Rect(chars[m.start()]["bbox"])
+                    for c in chars[m.start() + 1: m.end()]:
+                        box |= fitz.Rect(c["bbox"])
+                    found.append((int(m.group(1)), span["size"], box))
+    return found
+
+
+def link_citations(doc: fitz.Document) -> int:
+    """把正文上标 [n] 与文末参考文献 [n] 连成双向跳转。
+
+    Chrome 自己会给 href="#refN" 生成跳转，但它按内容区坐标算落点，漏掉了
+    页面上边距，实际偏高约 59pt（一行多）。这里整片重做：正文标号跳到文献
+    条目，文献标号跳回第一次引用它的地方。
+    """
+    body: dict[int, list[tuple[int, fitz.Rect]]] = {}
+    refs: dict[int, tuple[int, fitz.Rect]] = {}
+
+    for pno, page in enumerate(doc):
+        for link in page.get_links():
+            if link["kind"] in (fitz.LINK_GOTO, fitz.LINK_NAMED):
+                page.delete_link(link)
+        for num, size, box in citation_marks(page):
+            if size <= CITE_MAX_SIZE:
+                body.setdefault(num, []).append((pno, box))
+            elif size >= REF_MIN_SIZE:
+                refs[num] = (pno, box)
+
+    def jump(page: fitz.Page, box: fitz.Rect, target: fitz.Page, at: fitz.Point) -> None:
+        page.insert_link(
+            {
+                "kind": fitz.LINK_GOTO,
+                "from": fitz.Rect(box.x0 - 2, box.y0 - 2, box.x1 + 2, box.y1 + 2),
+                "page": target.number,
+                "to": fitz.Point(at.x, max(at.y, 0)),
+                "zoom": 0,
+            }
+        )
+
+    linked = 0
+    for num, (rpno, rbox) in refs.items():
+        hits = sorted(body.get(num, []), key=lambda h: (h[0], h[1].y0))
+        if not hits:
+            continue
+        # 文献序号 → 第一次引用它的地方；往上留一点，好让读者看见上下文
+        bpno, bbox = hits[0]
+        jump(doc[rpno], rbox, doc[bpno], fitz.Point(bbox.x0, bbox.y0 - 42))
+        for bpno, bbox in hits:
+            jump(doc[bpno], bbox, doc[rpno], fitz.Point(rbox.x0, rbox.y0 - 12))
+        linked += 1
+    return linked
+
 
 def insert_toc_page(doc: fitz.Document, starts: list[tuple[int, str]]) -> None:
     """在封面之后插入一页卷目。starts 为未插页时的章首页码。"""
@@ -303,8 +367,8 @@ def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
     tmp.replace(pdf_path)
 
 
-def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> None:
-    """补书签，并把整份 PDF 压到最小：删重复对象、清内容流、对象流压缩。
+def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> int:
+    """补书签、连引用跳转，并把整份 PDF 压到最小。
 
     use_objstms 会把字体描述、CID 宽度表、ToUnicode 这些「非流对象」也塞进
     压缩的对象流里——PDF 里这一堆元数据比正文本身还占地方。
@@ -317,6 +381,7 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> None:
     toc = [[1, title, pno + 1] for pno, title in starts]
     if toc:
         doc.set_toc(toc)
+    linked = link_citations(doc)
     tmp = pdf_path.with_suffix(".outline.pdf")
     doc.save(
         tmp,
@@ -328,6 +393,7 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> None:
     )
     doc.close()
     tmp.replace(pdf_path)
+    return linked
 
 
 def main() -> int:
@@ -346,9 +412,9 @@ def main() -> int:
     tmp.replace(OUT_PDF)
 
     stamp(OUT_PDF, toc_pages=toc_pages)
-    build_outline(OUT_PDF, toc_pages=toc_pages)
+    linked = build_outline(OUT_PDF, toc_pages=toc_pages)
     size_kb = OUT_PDF.stat().st_size // 1024
-    print(f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章)")
+    print(f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章, {linked} 条文献双向跳转)")
     return 0
 
 

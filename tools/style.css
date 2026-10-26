@@ -313,6 +313,9 @@ a.cite {
   vertical-align: super;
   color: #b5432f;
   padding: 0 1px;
+  /* 标号不许从中间断行，否则会变成「[1」换行「6]」，跳转也找不到 */
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 p.ref-item {
