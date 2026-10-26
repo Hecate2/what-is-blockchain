@@ -1,3 +1,5 @@
+/* 《天枢账簿》暖纸书式排版 */
+
 @page {
   size: A4;
   margin: 20mm 18mm 22mm 18mm;
@@ -9,230 +11,246 @@ html, body {
 }
 
 body {
-  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Times New Roman", serif;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
   font-size: 10.5pt;
-  line-height: 1.85;
-  color: #23272b;
+  line-height: 1.95;
+  color: #2b2620;
   text-align: justify;
 }
 
-/* 标题区 */
-h1 {
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 21pt;
-  font-weight: 600;
-  color: #12263f;
+/* ===== 封面 ===== */
+.cover {
   text-align: center;
+  page-break-after: always;
+  padding-top: 26mm;
+}
+
+.cover h1 {
+  break-before: auto;
+  font-size: 38pt;
+  letter-spacing: 16px;
+  text-indent: 16px;
+  color: #2b2620;
+  margin: 8mm 0 6mm;
+}
+
+.cover h1::after {
+  width: 180px;
+}
+
+.cover h2 {
+  break-before: auto;
+  font-size: 12.5pt;
+  font-weight: normal;
   letter-spacing: 3px;
-  margin: 18px 0 10px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #1f4e79;
+  color: #b5432f;
+  margin: 0 0 10mm;
 }
 
-blockquote {
-  margin: 10px 30px 16px;
-  padding: 8px 16px;
-  border: none;
-  border-left: 3px solid #c6d4e1;
-  background: #f7f9fb;
-  color: #5a6b7b;
-  font-size: 10pt;
-  line-height: 1.8;
-  text-indent: 0;
+.cover h2::after {
+  display: none;
 }
 
-p.abstract {
-  margin: 14px 10px 18px;
-  padding: 10px 14px;
-  background: #f2f5f8;
-  border-radius: 4px;
-  font-size: 10pt;
-  line-height: 1.85;
-  text-indent: 0;
-  color: #2c3a47;
+.cover img {
+  width: 72%;
 }
 
-p.data-note {
-  margin: 14px 10px 4px;
-  padding: 8px 12px;
-  background: #f7f9fb;
-  border-left: 3px solid #e8833a;
-  font-size: 9pt;
-  line-height: 1.75;
-  text-indent: 0;
-  color: #4a5560;
+.cover .figcap {
+  display: none;
 }
 
-/* 正文段落 */
+.cover p {
+  text-align: justify;
+  text-indent: 2em;
+  margin: 0 6mm 8px;
+  font-size: 10.5pt;
+  color: #4a4238;
+}
+
+/* ===== 章节标题 ===== */
+h1 {
+  break-before: page;
+  text-align: center;
+  font-size: 19pt;
+  font-weight: 600;
+  letter-spacing: 5px;
+  text-indent: 5px;
+  color: #2b2620;
+  margin: 24px 0 30px;
+  line-height: 1.5;
+}
+
+h1::after {
+  content: "";
+  display: block;
+  width: 120px;
+  height: 2.5px;
+  background: #b5432f;
+  margin: 13px auto 0;
+}
+
+h2 {
+  text-align: center;
+  font-size: 15pt;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #2b2620;
+  margin: 26px 0 18px;
+}
+
+h2::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 2px;
+  background: #c9972f;
+  margin: 10px auto 0;
+}
+
+h3 {
+  font-size: 12pt;
+  font-weight: 600;
+  color: #2d5e6e;
+  margin: 18px 0 8px;
+  break-after: avoid;
+}
+
+hr {
+  display: none;
+}
+
+/* ===== 正文段落 ===== */
 p {
   margin: 0 0 10px;
   text-indent: 2em;
 }
 
-figure-block, .figure-block p, .tab-caption, li, h1, h2, h3 {
+h1, h2, h3, li, figcaption, .figcap, .figure-block p,
+blockquote p, .ref-item, .data-note {
   text-indent: 0;
-}
-
-/* 章节标题 */
-h2 {
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 14pt;
-  font-weight: 600;
-  color: #1f4e79;
-  margin: 28px 0 12px;
-  padding-left: 10px;
-  border-left: 5px solid #1f4e79;
-  line-height: 1.4;
-  break-after: avoid;
-  page-break-after: avoid;
-}
-
-h3 {
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 11.5pt;
-  font-weight: 600;
-  color: #2e86ab;
-  margin: 20px 0 8px;
-  break-after: avoid;
-  page-break-after: avoid;
 }
 
 strong {
   font-weight: 600;
-  color: #173a5e;
+  color: #b5432f;
 }
 
-hr {
-  border: none;
-  border-top: 0.5pt solid #d8dee4;
-  margin: 22px 0;
+/* 对话着色 */
+em.say {
+  font-style: normal;
+  color: #2d5e6e;
 }
 
-/* 插图 */
+/* ===== 插图 ===== */
 .figure-block {
   text-align: center;
-  margin: 18px 0 22px;
+  margin: 20px 0 24px;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
 .figure-block img {
-  width: 86%;
+  width: 84%;
   max-width: 100%;
   height: auto;
 }
 
-.figure-block p {
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+.figcap {
   font-size: 9pt;
-  color: #55606b;
+  color: #6b5d4a;
   line-height: 1.7;
-  margin: 8px auto 0;
-  width: 86%;
+  margin: 7px auto 0;
+  width: 84%;
   text-align: center;
 }
 
-.figure-block p strong {
-  color: #1f4e79;
-  margin-right: 4px;
-}
-
-/* 表格 */
-.tab-caption {
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 9.5pt;
+.figcap::before {
+  content: "图　";
+  color: #b5432f;
   font-weight: 600;
-  color: #1f4e79;
-  text-align: center;
-  margin: 18px 0 6px;
+  letter-spacing: 1px;
 }
 
-.tab-caption strong {
-  color: #1f4e79;
-  margin-right: 4px;
-}
-
-table {
-  width: 94%;
-  margin: 4px auto 16px;
-  border-collapse: collapse;
+/* ===== 天枢阁·案卷框 ===== */
+blockquote.casebox {
+  margin: 28px 4px;
+  padding: 13px 16px 11px;
+  background: #f3e5d0;
+  border-left: 4px solid #b5432f;
+  border-top: 1px solid #dcc79c;
+  border-bottom: 1px solid #dcc79c;
+  border-right: 1px solid #dcc79c;
   font-size: 9.5pt;
-  line-height: 1.65;
-  break-inside: avoid;
-  page-break-inside: avoid;
+  line-height: 1.8;
+  color: #3d352a;
 }
 
-thead th {
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-weight: 600;
-  color: #1f4e79;
-  text-align: left;
-  padding: 7px 8px;
-  border-top: 1.5pt solid #1f4e79;
-  border-bottom: 0.75pt solid #1f4e79;
-  background: #f2f5f8;
+blockquote.casebox p:first-of-type strong {
+  letter-spacing: 1px;
 }
 
-tbody td {
-  padding: 6px 8px;
-  vertical-align: top;
-  border-bottom: 0.5pt solid #e2e7ec;
-}
-
-tbody tr:last-child td {
-  border-bottom: 1.5pt solid #1f4e79;
-}
-
-/* 代码 */
-pre {
-  margin: 12px auto;
+blockquote {
+  margin: 18px 4px;
   padding: 10px 14px;
-  background: #f7f9fb;
-  border: 0.5pt solid #d8dee4;
-  border-radius: 4px;
-  font-family: Menlo, "SF Mono", Consolas, monospace;
-  font-size: 9pt;
-  line-height: 1.65;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: #2c3a47;
+  background: #f6ecd9;
+  border-left: 3px solid #c9972f;
+  font-size: 9.5pt;
+  line-height: 1.8;
+  color: #3d352a;
 }
 
+/* ===== 代码（哈希值等） ===== */
 code {
   font-family: Menlo, "SF Mono", Consolas, monospace;
-  font-size: 9.5pt;
-  background: #f2f5f8;
-  padding: 1px 4px;
-  border-radius: 3px;
+  font-size: 8pt;
+  background: #fdf8ec;
+  border: 0.5pt solid #e0d5bd;
+  border-radius: 2px;
+  padding: 0 3px;
+  word-break: break-all;
+  color: #5a4a32;
+}
+
+pre {
+  margin: 10px auto;
+  padding: 8px 12px;
+  background: #fdf8ec;
+  border: 0.5pt solid #e0d5bd;
+  font-family: Menlo, Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 pre code {
   background: none;
+  border: none;
   padding: 0;
 }
 
-/* 目录与列表 */
+/* ===== 列表 ===== */
 ul, ol {
   margin: 8px 0 12px;
-  padding-left: 2em;
+  padding-left: 2.2em;
 }
 
 li {
   margin: 3px 0;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
-/* 引用与参考文献 */
+/* ===== 链接与引用 ===== */
 a {
-  color: #2e86ab;
+  color: #2d5e6e;
   text-decoration: none;
   word-break: break-all;
 }
 
 a.cite {
-  font-size: 7.5pt;
+  font-size: 7pt;
   vertical-align: super;
-  color: #2e86ab;
+  color: #b5432f;
   padding: 0 1px;
 }
 
@@ -240,12 +258,25 @@ p.ref-item {
   font-size: 8.5pt;
   line-height: 1.7;
   margin: 5px 0;
-  text-indent: -2.4em;
-  padding-left: 2.4em;
-  color: #3a444e;
+  text-indent: 0;
+  padding-left: 2.6em;
+  text-indent: -2.6em;
+  color: #4a4238;
+  text-align: left;
 }
 
 p.ref-item .refnum {
   font-weight: 600;
-  color: #1f4e79;
+  color: #b5432f;
+}
+
+p.data-note {
+  margin: 16px 6px 4px;
+  padding: 9px 13px;
+  background: #f6ecd9;
+  border-left: 3px solid #c9972f;
+  font-size: 9pt;
+  line-height: 1.75;
+  text-indent: 0;
+  color: #4a4238;
 }

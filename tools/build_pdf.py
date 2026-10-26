@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""README.md -> HTML -> PDF（学术期刊风格）。
+"""README.md -> HTML -> PDF（《天枢账簿》暖纸书式）。
 
 用法：python3 tools/build_pdf.py
-产物：什么是区块链.pdf（仓库根目录），中间产物在 build/。
+产物：天枢账簿.pdf（仓库根目录），中间产物在 build/。
 """
 import pathlib
 import re
@@ -13,8 +13,25 @@ import fitz  # PyMuPDF
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
-OUT_PDF = ROOT / "什么是区块链.pdf"
+OUT_PDF = ROOT / "天枢账簿.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+# 章题（用于页眉右侧与书签），顺序即文中出现顺序
+CHAPTERS = [
+    "楔子　消失的账页",
+    "第 1 章　定魂印",
+    "第 2 章　剑意账印",
+    "第 3 章　开山夺脉",
+    "第 4 章　论功行签",
+    "第 5 章　万叉一会",
+    "第 6 章　心魔法阵",
+    "第 7 章　证链",
+    "第 8 章　问心魔劫",
+    "第 9 章　万界共阵",
+    "第 10 章　代价",
+    "尾声　一年后",
+    "参考文献",
+]
 
 
 def md_to_fragment() -> str:
@@ -30,22 +47,43 @@ def md_to_fragment() -> str:
 
 
 def transform(frag: str) -> str:
-    frag = frag.replace('<div align="center">', '<div class="figure-block">')
-    frag = frag.replace(
-        "<p><strong>摘要</strong>", '<p class="abstract"><strong>摘要</strong>'
+    # 1) 封面：第一个 <hr /> 之前的内容包进 .cover，并删除该 hr
+    first_hr = frag.find("<hr")
+    if first_hr != -1:
+        head, tail = frag[:first_hr], frag[first_hr:]
+        tail = re.sub(r"^<hr[^>]*>\s*", "", tail)
+        frag = '<div class="cover">\n' + head + "\n</div>\n" + tail
+
+    # 2) 独立图片段落 -> figure-block + 图题
+    frag = re.sub(
+        r'<p><img src="([^"]+)" alt="([^"]*)"\s*/></p>',
+        r'<div class="figure-block"><img src="\1" alt="\2">'
+        r'<p class="figcap">\2</p></div>',
+        frag,
     )
-    frag = frag.replace(
-        "<p><strong>关于数据时效</strong>",
-        '<p class="data-note"><strong>关于数据时效</strong>',
+
+    # 3) 案卷框
+    frag = re.sub(
+        r"<blockquote>\s*(<p><strong>【天枢阁·案卷】)",
+        r'<blockquote class="casebox">\n\1',
+        frag,
     )
-    frag = re.sub(r"<p><strong>(表 \d+)", r'<p class="tab-caption"><strong>\1', frag)
-    # 先把正文里的引用标号变成链接
+
+    # 4) 对话着色（中文弯引号只出现在正文文本中，安全）
+    frag = re.sub(r"“([^“”]{1,120})”", r'<em class="say">“\1”</em>', frag)
+
+    # 5) 正文引用标号 -> 链接；参考文献条目 -> 锚点
     frag = re.sub(r"\[(\d{1,2})\]", r'<a class="cite" href="#ref\1">[\1]</a>', frag)
-    # 再把参考文献条目锚点化（条目以 "[n]　" 开头）
     frag = re.sub(
         r'<p><a class="cite" href="#ref(\d{1,2})">\[\d{1,2}\]</a>　',
         r'<p class="ref-item" id="ref\1"><span class="refnum">[\1]</span>　',
         frag,
+    )
+
+    # 6) 数据时效说明
+    frag = frag.replace(
+        "<p><strong>关于数据时效</strong>",
+        '<p class="data-note"><strong>关于数据时效</strong>',
     )
     return frag
 
@@ -56,7 +94,7 @@ def write_html(frag: str) -> pathlib.Path:
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>什么是区块链？</title>
+<title>天枢账簿：什么是区块链？</title>
 <style>
 {css}
 </style>
@@ -89,64 +127,64 @@ def chrome_to_pdf(html_path: pathlib.Path) -> None:
     )
 
 
+def chapter_starts(doc: fitz.Document) -> list[tuple[int, str]]:
+    """返回 [(页号0基, 章题)]，按页号升序。"""
+    starts = []
+    cursor = 0
+    for title in CHAPTERS:
+        for pno in range(cursor, doc.page_count):
+            if doc[pno].search_for(title):
+                starts.append((pno, title))
+                cursor = pno
+                break
+    return starts
+
+
 def stamp(pdf_path: pathlib.Path) -> None:
     doc = fitz.open(pdf_path)
     total = doc.page_count
-    gray = (0.48, 0.52, 0.57)
+    starts = chapter_starts(doc)
+    warm = (0.973, 0.953, 0.906)  # #f8f3e7
+    ink = (0.17, 0.15, 0.13)
+    faint = (0.78, 0.72, 0.62)
     for i, page in enumerate(doc):
         r = page.rect
-        if i > 0:
+        # 暖纸底色垫在内容之下（封面也铺）
+        page.draw_rect(r, color=None, fill=warm, overlay=False)
+        if i == 0:
+            continue  # 封面不加页眉页脚
+        chapter = ""
+        for pno, title in starts:
+            if pno <= i:
+                chapter = title
+            else:
+                break
+        page.insert_text((56, 42), "天枢账簿", fontname="china-s", fontsize=8.5, color=ink)
+        if chapter:
+            w = fitz.get_text_length(chapter, fontname="china-s", fontsize=8.5)
             page.insert_text(
-                (56, 42),
-                "什么是区块链？",
-                fontname="china-s",
-                fontsize=8.5,
-                color=(0.58, 0.62, 0.66),
+                (r.width - 56 - w, 42), chapter, fontname="china-s", fontsize=8.5, color=ink
             )
-            page.draw_line(
-                (56, 48), (r.width - 56, 48), color=(0.84, 0.87, 0.9), width=0.5
-            )
-        footer = f"第 {i + 1} 页 / 共 {total} 页"
+        page.draw_line((56, 48), (r.width - 56, 48), color=faint, width=0.5)
+        footer = f"— {i + 1} —"
         w = fitz.get_text_length(footer, fontname="china-s", fontsize=9)
         page.insert_text(
-            ((r.width - w) / 2, r.height - 34),
-            footer,
-            fontname="china-s",
-            fontsize=9,
-            color=gray,
+            ((r.width - w) / 2, r.height - 32), footer, fontname="china-s", fontsize=9, color=ink
         )
     tmp = pdf_path.with_suffix(".stamped.pdf")
-    doc.save(tmp)
+    doc.save(tmp, garbage=3, deflate=True)
     doc.close()
     tmp.replace(pdf_path)
 
 
 def build_outline(pdf_path: pathlib.Path) -> None:
     doc = fitz.open(pdf_path)
-    toc = []
-    headings = [
-        "1. 从一本谁都能改的账本说起",
-        "2. 哈希：数字世界的指纹",
-        "3. 数字签名：证明",
-        "4. 共识：全网怎么对账",
-        "5. 会算账的账本",
-        "6. 跟着一笔钱走完全程",
-        "7. 零知识证明",
-        "8. 这件事对软件世界意味着什么",
-        "9. 冷静一下",
-        "10. 结语",
-        "参考文献",
-    ]
-    for title in headings:
-        for pno in range(doc.page_count):
-            hits = doc[pno].search_for(title)
-            if hits:
-                toc.append([1, title, pno + 1])
-                break
+    starts = chapter_starts(doc)
+    toc = [[1, title, pno + 1] for pno, title in starts]
     if toc:
         doc.set_toc(toc)
     tmp = pdf_path.with_suffix(".outline.pdf")
-    doc.save(tmp)
+    doc.save(tmp, garbage=3, deflate=True)
     doc.close()
     tmp.replace(pdf_path)
 
@@ -157,7 +195,8 @@ def main() -> int:
     chrome_to_pdf(html_path)
     stamp(OUT_PDF)
     build_outline(OUT_PDF)
-    print(f"OK -> {OUT_PDF}")
+    size_kb = OUT_PDF.stat().st_size // 1024
+    print(f"OK -> {OUT_PDF} ({size_kb} KB)")
     return 0
 
 
