@@ -4,17 +4,24 @@
 用法：python3 tools/build_pdf.py
 产物：天枢账簿.pdf（仓库根目录），中间产物在 build/。
 """
+import io
 import pathlib
 import re
 import subprocess
 import sys
 
 import fitz  # PyMuPDF
+from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 OUT_PDF = ROOT / "天枢账簿.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+PAPER = "#f8f3e7"      # 与 stamp() 里铺的暖纸底色一致
+FIG_W_PX = 860        # 图在版面上宽约 415pt，按 150dpi 出像素
+FIG_QUALITY = 86      # JPEG 质量：线稿偏高一点，避免边缘发糊
+
 
 def chapters() -> list[str]:
     """章题直接从 README 的一级标题抽取，避免与正文脱节。"""
@@ -25,6 +32,32 @@ def chapters() -> list[str]:
             title = line[2:].strip()
             if title and title != "天枢账簿":
                 out.append(title)
+    return out
+
+
+def rasterize_images() -> dict[str, str]:
+    """把 SVG 预渲染成单张 JPEG。
+
+    Chrome 打印时会把带 pattern/渐变填充的 SVG 切成十几条横向碎图（各带一张
+    SMask），既糊又占空间。这里按版面显示宽度先栅格化一次，交给浏览器一张
+    定宽的 JPEG，它就会原样以 DCTDecode 嵌进去：一张图、一个流、150dpi。
+    """
+    cache = BUILD / "raster"
+    cache.mkdir(parents=True, exist_ok=True)
+    out: dict[str, str] = {}
+    for svg in sorted((ROOT / "img").glob("*.svg")):
+        jpg = cache / (svg.stem + ".jpg")
+        if not jpg.exists() or jpg.stat().st_mtime < svg.stat().st_mtime:
+            png = subprocess.run(
+                ["rsvg-convert", "-w", str(FIG_W_PX), "-b", PAPER, str(svg)],
+                capture_output=True,
+                check=True,
+            ).stdout
+            with Image.open(io.BytesIO(png)) as im:
+                im.convert("RGB").save(
+                    jpg, "JPEG", quality=FIG_QUALITY, optimize=True, progressive=False
+                )
+        out[f"img/{svg.name}"] = jpg.as_uri()
     return out
 
 
@@ -40,7 +73,11 @@ def md_to_fragment() -> str:
     return proc.stdout
 
 
-def transform(frag: str) -> str:
+def transform(frag: str, raster: dict[str, str]) -> str:
+    # 0) SVG 换成预渲染的 JPEG（只在 PDF 里换，README 仍指向矢量原图）
+    for src, uri in raster.items():
+        frag = frag.replace(f'src="{src}"', f'src="{uri}"')
+
     # 1) 封面与题记：以 <!--epigraph--> 标记切分，封面只留书名、副题、卷首图
     open_m, close_m = "<!--epigraph-->", "<!--/epigraph-->"
     if open_m in frag and close_m in frag:
@@ -56,6 +93,14 @@ def transform(frag: str) -> str:
             head, tail = frag[:first_hr], frag[first_hr:]
             tail = re.sub(r"^<hr[^>]*>\s*", "", tail)
             frag = '<div class="cover">\n' + head + "\n</div>\n" + tail
+
+    # 1b) 封面署名：只进 PDF，不动 README 正文
+    frag = re.sub(
+        r"(</h2>)",
+        r'\1\n<p class="byline">Hecate2<span class="by-role">著</span></p>',
+        frag,
+        count=1,
+    )
 
     # 2) 独立图片段落 -> figure-block + 图题
     frag = re.sub(
@@ -155,6 +200,40 @@ INK = (0.17, 0.15, 0.13)
 FAINT = (0.78, 0.72, 0.62)
 RUBRIC = (0.71, 0.26, 0.18)    # 朱色
 
+CJK = "china-s"   # 内置未嵌入中文字体（Heiti）
+LAT = "tiro"      # Times-Roman，配数字与拉丁字母
+
+
+def runs(text: str) -> list[tuple[str, bool]]:
+    """把字符串切成「连续 ASCII」与「连续非 ASCII」两种片段。"""
+    out: list[tuple[str, bool]] = []
+    for ch in text:
+        ascii_ = ord(ch) < 128
+        if out and out[-1][1] == ascii_:
+            out[-1] = (out[-1][0] + ch, ascii_)
+        else:
+            out.append((ch, ascii_))
+    return out
+
+
+def width_of(text: str, size: float) -> float:
+    return sum(
+        fitz.get_text_length(seg, fontname=LAT if a else CJK, fontsize=size)
+        for seg, a in runs(text)
+    )
+
+
+def draw_text(page: fitz.Page, x: float, y: float, text: str, size: float, color) -> float:
+    """中英混排：中文用内置字体，ASCII 用 Times。
+
+    内置中文字体把 ASCII 也排成方块全角，数字会被拆成「3 0 0 1」，
+    所以数字与拉丁字母必须换字体单独画。
+    """
+    for seg, a in runs(text):
+        page.insert_text((x, y), seg, fontname=LAT if a else CJK, fontsize=size, color=color)
+        x += fitz.get_text_length(seg, fontname=LAT if a else CJK, fontsize=size)
+    return x
+
 TOC_PAGES = 1   # 卷目占几页
 FRONT_PAGES = 2  # 封面 + 题记：不排页眉页脚，也不编页码
 BODY_START = TOC_PAGES + FRONT_PAGES  # 正文第一页的 0 基下标
@@ -167,25 +246,31 @@ def insert_toc_page(doc: fitz.Document, starts: list[tuple[int, str]]) -> None:
     page.draw_rect(r, color=None, fill=WARM, overlay=False)
 
     title = "卷　目"
-    w = fitz.get_text_length(title, fontname="china-s", fontsize=17)
-    page.insert_text(((r.width - w) / 2, 108), title, fontname="china-s", fontsize=17, color=INK)
+    w = width_of(title, 17)
+    draw_text(page, (r.width - w) / 2, 108, title, 17, INK)
     page.draw_line((90, 124), (r.width - 90, 124), color=RUBRIC, width=1.2)
 
-    y = 168
-    step = 27
+    y = 176
+    step = 33
     left, right = 90, r.width - 90
     for pno, name in starts:
         # 封面与题记不编页码，所以卷目里的页码是「章首页的前一页之外」再减一
         shown = str(pno - (FRONT_PAGES - 1))
-        pw = fitz.get_text_length(shown, fontname="helv", fontsize=10.5)
-        page.insert_text((left, y), name, fontname="china-s", fontsize=10.5, color=INK)
-        page.insert_text((right - pw, y), shown, fontname="helv", fontsize=10.5, color=INK)
-        tw = fitz.get_text_length(name, fontname="china-s", fontsize=10.5)
-        x = left + tw + 8
-        dot_end = right - pw - 8
-        while x < dot_end:
-            page.draw_circle((x, y - 3), 0.45, color=FAINT, fill=FAINT)
-            x += 5.5
+        pw = width_of(shown, 11.5)
+        draw_text(page, left, y, name, 11.5, INK)
+        draw_text(page, right - pw, y, shown, 11.5, INK)
+        tw = width_of(name, 11.5)
+        dot_end = right - pw - 9
+        if left + tw + 9 < dot_end:
+            # 一条细虚线当引线：比逐点画圆小两个数量级，观感一样
+            page.draw_line(
+                (left + tw + 9, y - 3),
+                (dot_end, y - 3),
+                color=FAINT,
+                width=0.9,
+                dashes="[0.7 3.6] 0",
+                lineCap=1,
+            )
         y += step
 
 
@@ -204,38 +289,50 @@ def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
                 chapter = title
             else:
                 break
-        page.insert_text((56, 42), "天枢账簿", fontname="china-s", fontsize=8.5, color=INK)
+        draw_text(page, 56, 42, "天枢账簿", 8.5, INK)
         if chapter:
-            w = fitz.get_text_length(chapter, fontname="china-s", fontsize=8.5)
-            page.insert_text(
-                (r.width - 56 - w, 42), chapter, fontname="china-s", fontsize=8.5, color=INK
-            )
+            w = width_of(chapter, 8.5)
+            draw_text(page, r.width - 56 - w, 42, chapter, 8.5, INK)
         page.draw_line((56, 48), (r.width - 56, 48), color=FAINT, width=0.5)
         footer = f"— {i - BODY_START + 1} —"
-        w = fitz.get_text_length(footer, fontname="helv", fontsize=9)
-        page.insert_text(
-            ((r.width - w) / 2, r.height - 32), footer, fontname="helv", fontsize=9, color=INK
-        )
+        w = width_of(footer, 9)
+        draw_text(page, (r.width - w) / 2, r.height - 32, footer, 9, INK)
     tmp = pdf_path.with_suffix(".stamped.pdf")
-    doc.save(tmp, garbage=3, deflate=True)
+    doc.save(tmp, garbage=4, deflate=True, clean=True)
     doc.close()
     tmp.replace(pdf_path)
 
 
 def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> None:
+    """补书签，并把整份 PDF 压到最小：删重复对象、清内容流、对象流压缩。
+
+    use_objstms 会把字体描述、CID 宽度表、ToUnicode 这些「非流对象」也塞进
+    压缩的对象流里——PDF 里这一堆元数据比正文本身还占地方。
+    """
     doc = fitz.open(pdf_path)
+    meta = doc.metadata
+    meta["author"] = "Hecate2"
+    doc.set_metadata(meta)
     starts = chapter_starts(doc, skip=1 + toc_pages)
     toc = [[1, title, pno + 1] for pno, title in starts]
     if toc:
         doc.set_toc(toc)
     tmp = pdf_path.with_suffix(".outline.pdf")
-    doc.save(tmp, garbage=3, deflate=True)
+    doc.save(
+        tmp,
+        garbage=4,
+        clean=True,
+        deflate=True,
+        deflate_fonts=True,
+        use_objstms=1,
+    )
     doc.close()
     tmp.replace(pdf_path)
 
 
 def main() -> int:
-    frag = transform(md_to_fragment())
+    raster = rasterize_images()
+    frag = transform(md_to_fragment(), raster)
     html_path = write_html(frag)
     chrome_to_pdf(html_path)
 

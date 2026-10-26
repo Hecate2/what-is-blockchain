@@ -12,8 +12,8 @@ html, body {
 
 body {
   font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
-  font-size: 10.5pt;
-  line-height: 1.95;
+  font-size: 12pt;
+  line-height: 1.8;
   color: #2b2620;
   text-align: justify;
 }
@@ -44,11 +44,27 @@ body {
   font-weight: normal;
   letter-spacing: 3px;
   color: #b5432f;
-  margin: 0 0 10mm;
+  margin: 0 0 7mm;
 }
 
 .cover h2::after {
   display: none;
+}
+
+/* 封面署名 */
+.cover .byline {
+  margin: 0 0 12mm;
+  text-indent: 0;
+  font-size: 11pt;
+  letter-spacing: 0.8px;
+  color: #4a4238;
+}
+
+.cover .byline .by-role {
+  font-size: 8.5pt;
+  letter-spacing: 1px;
+  color: #9b8b73;
+  margin-left: 9px;
 }
 
 .cover img {
@@ -67,8 +83,8 @@ body {
 }
 
 .epigraph p {
-  font-size: 12.5pt;
-  line-height: 2.45;
+  font-size: 13.5pt;
+  line-height: 2.3;
   text-indent: 2em;
   margin: 0 0 9pt;
   color: #3a3229;
@@ -120,7 +136,7 @@ h2::after {
 }
 
 h3 {
-  font-size: 12pt;
+  font-size: 13pt;
   font-weight: 600;
   color: #2d5e6e;
   margin: 18px 0 8px;
@@ -168,9 +184,9 @@ em.say {
 }
 
 .figcap {
-  font-size: 9pt;
+  font-size: 10pt;
   color: #6b5d4a;
-  line-height: 1.7;
+  line-height: 1.65;
   margin: 7px auto 0;
   width: 84%;
   text-align: center;
@@ -192,8 +208,8 @@ blockquote.casebox {
   border-top: 1px solid #dcc79c;
   border-bottom: 1px solid #dcc79c;
   border-right: 1px solid #dcc79c;
-  font-size: 9.5pt;
-  line-height: 1.8;
+  font-size: 10.5pt;
+  line-height: 1.75;
   color: #3d352a;
 }
 
@@ -206,15 +222,15 @@ blockquote {
   padding: 10px 14px;
   background: #f6ecd9;
   border-left: 3px solid #c9972f;
-  font-size: 9.5pt;
-  line-height: 1.8;
+  font-size: 10.5pt;
+  line-height: 1.75;
   color: #3d352a;
 }
 
 /* ===== 代码（哈希值等） ===== */
 code {
   font-family: Menlo, "SF Mono", Consolas, monospace;
-  font-size: 8pt;
+  font-size: 8.6pt;
   background: #fdf8ec;
   border: 0.5pt solid #e0d5bd;
   border-radius: 2px;
@@ -230,8 +246,8 @@ pre {
   background: #fbf3e2;
   border: 2.4pt double #b5432f;
   font-family: "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", serif;
-  font-size: 10pt;
-  line-height: 2.05;
+  font-size: 11pt;
+  line-height: 2.0;
   letter-spacing: 1.6px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -251,8 +267,8 @@ table {
   width: 100%;
   margin: 14px 0 18px;
   border-collapse: collapse;
-  font-size: 9.2pt;
-  line-height: 1.7;
+  font-size: 10.2pt;
+  line-height: 1.65;
   border-top: 1.6pt solid #6b4a33;
   border-bottom: 1.6pt solid #6b4a33;
 }
@@ -272,7 +288,7 @@ tbody td {
 }
 tbody tr:last-child td { border-bottom: none; }
 tbody td:first-child, thead th:first-child { white-space: nowrap; }
-table code { font-size: 8.2pt; }
+table code { font-size: 9pt; }
 
 /* ===== 列表 ===== */
 ul, ol {
@@ -293,14 +309,14 @@ a {
 }
 
 a.cite {
-  font-size: 7pt;
+  font-size: 7.6pt;
   vertical-align: super;
   color: #b5432f;
   padding: 0 1px;
 }
 
 p.ref-item {
-  font-size: 8.5pt;
+  font-size: 9.4pt;
   line-height: 1.7;
   margin: 5px 0;
   text-indent: 0;
@@ -320,8 +336,8 @@ p.data-note {
   padding: 9px 13px;
   background: #f6ecd9;
   border-left: 3px solid #c9972f;
-  font-size: 9pt;
-  line-height: 1.75;
+  font-size: 9.8pt;
+  line-height: 1.7;
   text-indent: 0;
   color: #4a4238;
 }
