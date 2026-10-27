@@ -261,84 +261,137 @@ def fig01():
 
 
 # ---------------------------------------------------------------- 03 剑脊
-def forge(x, y, w, h):
-    """一座砖炉，炉口有火。"""
-    o = [K.rect(x, y, w, h, fill="#c4ab88", stroke=K.INK, sw=1.4)]
-    for r in range(int(h // 20)):
-        o.append(K.line(x, y + r * 20, x + w, y + r * 20, K.INK, 0.7, 0.3))
-    for c in range(int(w // 34)):
-        o.append(K.line(x + 17 + c * 34, y + (c % 2) * 10, x + 17 + c * 34,
-                        y + h - (1 - c % 2) * 10, K.INK, 0.7, 0.22))
-    o.append(K.rect(x + w * 0.20, y + h * 0.36, w * 0.60, h * 0.50, fill="#43261a", stroke=K.INK, sw=1.3))
-    o.append(K.glow(x + w * 0.5, y + h * 0.70, w * 0.95, "#f2a63c", 0.75))
-    o.append(K.flame(x + w * 0.5, y + h * 0.86, 1.0))
-    o.append(K.pth(f"M{x - 9} {y} l{w + 18} 0 l-7 -11 l{-w - 4} 0 Z", fill="#9d8767", stroke=K.INK, w=1.2))
-    o.append(K.pth(f"M{x + 12} {y - 11} L{x + 22} {y - h * 0.72} L{x + w - 22} {y - h * 0.72} "
-                   f"L{x + w - 12} {y - 11} Z", fill="#a8906c", stroke=K.INK, w=1.2, op=0.9))
-    o.append(K.smoke(x + w * 0.5, y - 8, 74, 13, 1, K.ASH, 0.32))
-    return "".join(o)
-
-
 def fig03():
-    W, H = 720, 470
+    """剑峰石碑：一整面碑，只刻一条曲线、一条割线、四块石与一处基点。"""
+    W, H = 720, 600
     o = []
-    o.append(f'<rect width="{W}" height="{H}" fill="#efe2c6"/>')
-    o.append(K.rect(0, 0, W, 402, fill="url(#brick)", stroke=None, op=0.5))
-    o.append(K.line(0, 402, W, 402, K.INK, 1.4, 0.7))
-    o.append(K.rect(0, 402, W, H - 402, fill="#ded0b1", stroke=None, op=0.85))
-    o.append(forge(20, 168, 128, 234))
-    # 砧
-    o.append(K.pth("M254 402 L326 402 L320 372 L260 372 Z", fill="#6b5540", stroke=K.INK, w=1.4))
-    o.append(K.pth("M232 372 L348 372 L342 340 L238 340 Z", fill="#5a6064", stroke=K.INK, w=1.6))
-    o.append(K.line(238, 346, 342, 346, "#8d979c", 1.3, 0.8))
-    o.append(K.pth("M322 348 L352 344 L352 356 L322 356 Z", fill="#4a4f52", stroke=K.INK, w=1.0))
-    # 剑 A：砧上，柄首开着口
-    o.append(K.glow(300, 330, 108, "#f2a63c", 0.52))
-    o.append(K.sword(372, 326, 214, ang=178, hot=True, open_pommel=True, grain=9))
-    # 匠人
-    o.append(K.person(452, 440, 240, robe="#7a5f42", hat="jin",
-                      l_arm=(-0.30, -0.50), r_arm=(0.34, -0.78), face=True))
-    # 锤子
-    o.append(K.pth("M520 264 L548 218", stroke=K.OCHRE, w=7.4))
-    o.append(K.rect(540, 200, 36, 21, rx=2, fill="#4b4f52", stroke=K.INK, sw=1.6))
-    o.append(K.pth("M520 264 L506 286", stroke=K.OCHRE, w=5.0))
-    # 左手托着那枚印，正往柄首里送
-    o.append(K.jade_seal(350, 354, 48, angle=-8))
-    o.append(K.hand(380, 366, 0.95, ang=196))
-    # 剑架：一把仿剑，纹路照抄，柄是空的
-    o.append(K.pth("M572 158 L572 424 M668 158 L668 424", stroke=K.OCHRE, w=5.0))
-    o.append(K.line(566, 168, 674, 168, K.OCHRE, 4.0))
-    o.append(K.line(566, 300, 674, 300, K.OCHRE, 3.0))
-    o.append(K.sword(620, 178, 220, ang=90, blade="#a9b1b5", open_pommel=True, grain=9))
-    # 墙上用炭画的 y² = x³ + 7，P 与 Q 连一条线，第三个交点翻过横轴得 P+Q
-    def sx(x):
-        return 150 + (x + 1.95) / 3.10 * 208
 
-    def sy(y):
-        return 178 - y / 6.4 * 244
+    # 碑外的粗石壁
+    o.append(f'<rect width="{W}" height="{H}" fill="#d9caab"/>')
+    for i in range(7):
+        yy = 26 + i * 88
+        o.append(K.line(0, yy, W, yy, "#bfae8c", 1.0, 0.32))
+    for i in range(6):
+        xx = 34 + i * 130
+        o.append(K.line(xx, 0, xx + 16, H, "#c4b492", 0.8, 0.26))
+    o.append(K.dots(0, 0, W, H, n=90, color="#b9a988", r=1.5, op=0.45, seed=17))
 
-    o.append(K.line(sx(-1.95), sy(0), sx(1.15), sy(0), "#8d8168", 1.0, 0.45, dash="5 5"))
-    o.append(K.line(sx(-1.95), sy(3.2), sx(-1.95), sy(-3.2), "#8d8168", 1.0, 0.4, dash="5 5"))
+    # 碑身：右上磕去一角
+    o.append(K.pth("M30 26 L688 26 L694 40 L694 576 L30 576 Z",
+                   fill="#2b231c", stroke=None, op=0.16))
+    o.append(K.pth("M22 18 L684 18 L700 34 L700 582 L22 582 Z",
+                   fill="#f7eedc", stroke=K.INK, w=2.6))
+    o.append(K.pth("M32 28 L682 28 L690 38 L690 574 L32 574 Z",
+                   stroke=K.GOLD, w=1.1, op=0.8))
+    o.append(K.dots(44, 40, 612, 516, n=110, color="#cbb894", r=1.1, op=0.4, seed=5))
+
+    # 坐标映射：曲线占去碑面绝大部分
+    x0, x1, ytop, ybot = 58.0, 662.0, 52.0, 548.0
+    wx0, wx1, wy = -1.95, 2.88, 5.45
+
+    def X(x):
+        return x0 + (x - wx0) / (wx1 - wx0) * (x1 - x0)
+
+    def Y(y):
+        cy = (ytop + ybot) / 2
+        sy = (ybot - ytop) / (2 * wy)
+        return cy - y * sy
+
+    # 横轴
+    o.append(K.line(x0, Y(0), x1, Y(0), "#8d8168", 1.1, 0.42, dash="6 9"))
+
+    # 曲线：按 y 采样，左端收得干净，不会显出折角
+    ymax = 5.40
+    N = 340
+
+    def curve_x(yy):
+        t = yy * yy - 7.0
+        return t ** (1 / 3) if t >= 0 else -((-t) ** (1 / 3))
+
     for sgn in (1, -1):
         pts = []
-        for k in range(49):
-            x = -1.913 + (1.15 + 1.913) * k / 48.0
-            pts.append((sx(x), sy(sgn * math.sqrt(max(x ** 3 + 7.0, 0.0)))))
+        for k in range(N + 1):
+            yy = ymax * k / N
+            pts.append((X(curve_x(yy)), Y(sgn * yy)))
         d = "M" + " L".join(f"{a:.1f} {b:.1f}" for a, b in pts)
-        o.append(K.pth(d, stroke="#4a4032", w=2.4, op=0.7))
-    P = (0.0, math.sqrt(7.0))
-    Q = (1.0, math.sqrt(8.0))
-    m = (Q[1] - P[1]) / (Q[0] - P[0])
+        o.append(K.pth(d, stroke="#7d9fb0", w=15, op=0.16))
+        o.append(K.pth(d, stroke=K.WHITE, w=9.4, op=0.95))
+        o.append(K.pth(d, stroke=K.AZURITE, w=4.4))
+        o.append(K.pth(d, stroke="#a9c8da", w=1.3, op=0.85))
+
+    # P 在右上臂，Q 在左下首端；过两点的割线交曲线于 R
+    P = (2.62, (2.62 ** 3 + 7) ** 0.5)
+    Q = (-1.90, -((-1.90) ** 3 + 7) ** 0.5)
+    m = (P[1] - Q[1]) / (P[0] - Q[0])
     x3 = m * m - P[0] - Q[0]
     y3 = P[1] + m * (x3 - P[0])
-    o.append(K.line(sx(x3 - 0.62), sy(y3 - m * 0.62), sx(Q[0] + 0.30), sy(Q[1] + m * 0.30),
-                    "#3a3126", 1.6, 0.72))
-    o.append(K.line(sx(x3), sy(y3), sx(x3), sy(-y3), "#a8322a", 1.5, 0.75, dash="7 5"))
-    for xx, yy in (P, Q):
-        o.append(K.circ(sx(xx), sy(yy), 5.0, fill=K.GAMBOGE, stroke=K.INK, sw=1.1))
-    o.append(K.circ(sx(x3), sy(y3), 5.0, fill="#efe2c6", stroke=K.INK, sw=1.1))
-    o.append(K.circ(sx(x3), sy(-y3), 5.6, fill=K.CINNABAR, stroke=K.INK, sw=1.1))
-    return K.canvas(W, H, "".join(o), base="#efe2c6")
+    R = (x3, y3)
+    S = (x3, -y3)
+
+    # 反射虚线先画，割线压在上面
+    o.append(K.line(X(x3), Y(y3), X(x3), Y(-y3), K.GAMBOGE, 2.2, 0.9, dash="9 8"))
+
+    # 割线只取 P、Q 之间，正好穿过 R；白边让它与银痕分得开
+    o.append(K.line(X(Q[0]), Y(Q[1]), X(P[0]), Y(P[1]), K.WHITE, 7.4, 0.92))
+    o.append(K.line(X(Q[0]), Y(Q[1]), X(P[0]), Y(P[1]), K.CINNABAR, 2.8))
+
+    def dot(x, y, color, r=7.2, hollow=False):
+        p = [K.circ(x, y, 11.4, fill=K.WHITE, stroke=None, op=0.96)]
+        if hollow:
+            p.append(K.circ(x, y, 6.2, fill=K.PAPER, stroke=color, sw=2.6))
+        else:
+            p.append(K.circ(x, y, r, fill=color, stroke=K.WHITE, sw=2.0))
+            p.append(K.circ(x - r * 0.30, y - r * 0.36, 2.0, fill=K.WHITE,
+                            stroke=None, op=0.6))
+        return "".join(p)
+
+    o.append(dot(X(P[0]), Y(P[1]), K.MALACH))
+    o.append(dot(X(Q[0]), Y(Q[1]), K.MALACH))
+    o.append(dot(X(R[0]), Y(R[1]), K.CINNABAR, hollow=True))
+    o.append(dot(X(S[0]), Y(S[1]), K.GAMBOGE, r=8.0))
+
+    # 基点 G：一块方形起跳石，落在左下臂
+    gx, gy = X(-1.2), Y(-((-1.2) ** 3 + 7) ** 0.5)
+    o.append(K.rect(gx - 13.6, gy - 13.6, 27.2, 27.2, rx=3.5, fill=K.WHITE, stroke=None, op=0.96))
+    o.append(K.rect(gx - 9.2, gy - 9.2, 18.4, 18.4, rx=2.4, fill=K.AZURITE,
+                    stroke=K.WHITE, sw=1.8))
+    o.append(K.rect(gx - 4.6, gy - 4.6, 9.2, 9.2, rx=1, fill="none",
+                    stroke=K.WHITE, sw=0.9, op=0.55))
+
+    def lab(x, y, s, size, color, anchor="start", weight="700"):
+        return (f'<text x="{x:.1f}" y="{y:.1f}" font-family="{K.FK}" font-size="{size}" '
+                f'font-weight="{weight}" fill="{color}" stroke="{K.WHITE}" stroke-width="4.4" '
+                f'paint-order="stroke" text-anchor="{anchor}">{s}</text>')
+
+    o.append(lab(X(P[0]) - 24, Y(P[1]) - 6, "P", 30, K.MALACH, "end"))
+    o.append(lab(X(Q[0]) + 20, Y(Q[1]) + 31, "Q", 30, K.MALACH))
+    o.append(lab(X(R[0]) - 16, Y(R[1]) - 13, "R", 25, K.CINNABAR, "end"))
+    o.append(lab(X(S[0]), Y(S[1]) + 40, "P+Q", 26, K.GOLD, "middle"))
+    o.append(lab(gx, gy + 46, "G", 30, K.AZURITE, "middle"))
+    o.append(lab(gx, gy + 70, "基点", 16, K.AZURITE, "middle", weight="400"))
+
+    # 方程刻在左上，留白处正好容得下
+    def eq(x, y, s, size, color=K.GOLD, anchor="start"):
+        return (f'<text x="{x}" y="{y}" font-family="{K.FK}" font-size="{size}" font-weight="700" '
+                f'fill="{color}" stroke="{K.WHITE}" stroke-width="3.4" paint-order="stroke" '
+                f'text-anchor="{anchor}">{s}</text>')
+
+    o.append(f'<text x="62" y="84" font-family="{K.FK}" font-size="16" letter-spacing="5" '
+             f'fill="{K.OCHRE}">椭圆曲线</text>')
+    o.append(eq(62, 128, "y", 38))
+    o.append(eq(83, 114, "2", 22))
+    o.append(eq(101, 128, "=", 38))
+    o.append(eq(137, 128, "x", 38))
+    o.append(eq(158, 114, "3", 22))
+    o.append(eq(182, 128, "+", 38))
+    o.append(eq(216, 128, "7", 38))
+
+    # 左下角一方朱印，只是落款
+    o.append(K.rect(48, 488, 46, 46, fill=K.CINNABAR, stroke=None, op=0.82))
+    o.append(K.rect(51, 491, 40, 40, fill="none", stroke=K.WHITE, sw=1.2, op=0.7))
+    o.append(K.seal_script(71, 511, 36))
+
+    return K.canvas(W, H, "".join(o), base="#d9caab", grain=0.4)
 
 
 # ---------------------------------------------------------------- 04 开山
