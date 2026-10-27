@@ -170,11 +170,20 @@ em.say {
 }
 
 /* ===== 插图 ===== */
+body {
+  counter-reset: fig;
+}
+
 .figure-block {
+  counter-increment: fig;
   text-align: center;
   margin: 20px 0 24px;
   break-inside: avoid;
   page-break-inside: avoid;
+}
+
+.cover .figure-block {
+  counter-increment: none;
 }
 
 .figure-block img {
@@ -193,7 +202,7 @@ em.say {
 }
 
 .figcap::before {
-  content: "图　";
+  content: "图 " counter(fig) "　";
   color: #b5432f;
   font-weight: 600;
   letter-spacing: 1px;
@@ -201,15 +210,15 @@ em.say {
 
 /* ===== 天枢阁·案卷框 ===== */
 blockquote.casebox {
-  margin: 28px 4px;
-  padding: 13px 16px 11px;
+  margin: 16px 4px;
+  padding: 9px 16px;
   background: #f3e5d0;
   border-left: 4px solid #b5432f;
   border-top: 1px solid #dcc79c;
   border-bottom: 1px solid #dcc79c;
   border-right: 1px solid #dcc79c;
-  font-size: 10.5pt;
-  line-height: 1.75;
+  font-size: 10.3pt;
+  line-height: 1.68;
   color: #3d352a;
 }
 
@@ -310,7 +319,9 @@ li {
 a {
   color: #2d5e6e;
   text-decoration: none;
-  word-break: break-all;
+  /* 常规断行优先在斜杠后（构建时插了 <wbr>），实在放不下才在任意处断 */
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 a.cite {
@@ -324,9 +335,9 @@ a.cite {
 }
 
 p.ref-item {
-  font-size: 9.4pt;
-  line-height: 1.7;
-  margin: 5px 0;
+  font-size: 9.2pt;
+  line-height: 1.48;
+  margin: 2px 0;
   text-indent: 0;
   padding-left: 2.6em;
   text-indent: -2.6em;

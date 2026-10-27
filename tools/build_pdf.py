@@ -19,8 +19,8 @@ OUT_PDF = ROOT / "天枢账簿.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 PAPER = "#f8f3e7"      # 与 stamp() 里铺的暖纸底色一致
-FIG_W_PX = 860        # 图在版面上宽约 415pt，按 150dpi 出像素
-FIG_QUALITY = 86      # JPEG 质量：线稿偏高一点，避免边缘发糊
+FIG_W_PX = 1100       # 图在版面上宽约 415pt，按 190dpi 出像素
+FIG_QUALITY = 88      # JPEG 质量：线稿偏高一点，避免边缘发糊
 
 
 def chapters() -> list[str]:
@@ -60,7 +60,7 @@ def rasterize_images() -> dict[str, str]:
 
     Chrome 打印时会把带 pattern/渐变填充的 SVG 切成十几条横向碎图（各带一张
     SMask），既糊又占空间。这里按版面显示宽度先栅格化一次，交给浏览器一张
-    定宽的 JPEG，它就会原样以 DCTDecode 嵌进去：一张图、一个流、150dpi。
+    定宽的 JPEG，它就会原样以 DCTDecode 嵌进去：一张图、一个流、约 190dpi。
     """
     cache = BUILD / "raster"
     cache.mkdir(parents=True, exist_ok=True)
@@ -148,6 +148,17 @@ def transform(frag: str, raster: dict[str, str]) -> str:
         frag,
     )
 
+    # 5b) 长 URL 只在斜杠后断行，别把 https:// 拆成 htt / ps://
+    def _url_wbr(m: re.Match) -> str:
+        href, text = m.group(1), m.group(2)
+        if "://" not in text:
+            return m.group(0)
+        scheme, rest = text.split("://", 1)
+        rest = rest.replace("/", "/<wbr>")
+        return f'<a href="{href}">{scheme}://<wbr>{rest}</a>'
+
+    frag = re.sub(r'<a href="([^"]+)">(https?://[^<]+)</a>', _url_wbr, frag)
+
     # 6) 数据时效说明
     frag = frag.replace(
         "<p><strong>关于数据时效</strong>",
@@ -196,17 +207,21 @@ def chrome_to_pdf(html_path: pathlib.Path) -> None:
     )
 
 
+def norm_text(x: str) -> str:
+    """抹掉空白再比。章题在卷目、页眉、篇首三处的空白与断行都不一样，
+    抹平之后才认得出是同一个标题。"""
+    return "".join(x.split())
+
+
 def chapter_starts(doc: fitz.Document, skip: int = 0) -> list[tuple[int, str]]:
     """返回 [(页号0基, 章题)]。skip 用于跳过封面与卷目，避免误命中目录里的标题。"""
-    def norm(x: str) -> str:
-        return "".join(x.split()).replace("\u00b7", "·")
 
     titles = chapters()
-    texts = [norm(doc[i].get_text()) for i in range(doc.page_count)]
+    texts = [norm_text(doc[i].get_text()) for i in range(doc.page_count)]
     starts = []
     cursor = skip
     for title in titles:
-        key = norm(title)
+        key = norm_text(title)
         for pno in range(cursor, doc.page_count):
             if key in texts[pno]:
                 starts.append((pno, title))
@@ -257,6 +272,7 @@ def draw_text(page: fitz.Page, x: float, y: float, text: str, size: float, color
 TOC_PAGES = 1   # 卷目占几页
 FRONT_PAGES = 2  # 封面 + 题记：不排页眉页脚，也不编页码
 BODY_START = TOC_PAGES + FRONT_PAGES  # 正文第一页的 0 基下标
+TOC_PNO = 1      # 卷目页的 0 基页号（在封面之后）
 
 CITE_MAX_SIZE = 8.5   # 正文上标 [n] 的字号（.cite 是 7.6pt）
 REF_MIN_SIZE = 9.0    # 参考文献条目序号 [n] 的字号（.refnum 是 9.4pt）
@@ -323,9 +339,105 @@ def link_citations(doc: fitz.Document) -> int:
     return linked
 
 
+def page_lines(page: fitz.Page) -> list[tuple[str, fitz.Rect, float]]:
+    """页面上每一行：(文字, 矩形, 字号)。"""
+    out: list[tuple[str, fitz.Rect, float]] = []
+    for block in page.get_text("dict")["blocks"]:
+        if block.get("type") != 0:
+            continue
+        for line in block["lines"]:
+            text = "".join(s["text"] for s in line["spans"])
+            if not text:
+                continue
+            size = max((s["size"] for s in line["spans"]), default=0.0)
+            out.append((text, fitz.Rect(line["bbox"]), size))
+    return out
+
+
+def toc_entries(page: fitz.Page) -> dict[str, tuple[fitz.Rect, fitz.Rect | None]]:
+    """卷目页上的条目：章题矩形 + 同一行页码的矩形。
+
+    章题与页码是 draw_text 分两次画的，在文字层里落到相邻两行，
+    靠纵向位置把它们配成一对。
+    """
+    lines = page_lines(page)
+    out: dict[str, tuple[fitz.Rect, fitz.Rect | None]] = {}
+    for text, rect, _ in lines:
+        key = norm_text(text)
+        if not key or key.isdigit():
+            continue
+        num = None
+        for t2, r2, _ in lines:
+            if norm_text(t2).isdigit() and r2.x0 > rect.x1 and abs(r2.y0 - rect.y0) < 4:
+                num = r2
+                break
+        out[key] = (rect, num)
+    return out
+
+
+def heading_rect(page: fitz.Page, title: str) -> fitz.Rect | None:
+    """页面上那个同名的大标题。
+
+    页眉右上角也印着章名，靠字号把两者分开：篇首的大标题字号最大。
+    """
+    key = norm_text(title)
+    best: tuple[float, fitz.Rect] | None = None
+    for text, rect, size in page_lines(page):
+        if norm_text(text) != key:
+            continue
+        if best is None or size > best[0]:
+            best = (size, rect)
+    return best[1] if best else None
+
+
+def link_toc(doc: fitz.Document, starts: list[tuple[int, str]]) -> tuple[int, list[str]]:
+    """卷目条目与章首大标题互连。
+
+    卷目这一页是 PyMuPDF 自己画的，Chrome 没参与，页面上一个链接也没有，
+    得在这里补。插入时机排在 link_citations 之后：那个函数会先清掉全篇的
+    GOTO 链接再重排，卷目的链接排在它后面才留得住。
+    """
+    toc = doc[TOC_PNO]
+    entries = toc_entries(toc)
+    linked = 0
+    missed: list[str] = []
+    for pno, title in starts:
+        item = entries.get(norm_text(title))
+        head = heading_rect(doc[pno], title)
+        if item is None or head is None:
+            missed.append(title)
+            continue
+        title_rect, num_rect = item
+        # 横向落点归零，免得把左边的页边距推出屏幕
+        at = fitz.Point(0, max(head.y0 - 30, 0))
+        for box, pad in ((title_rect, 2), (num_rect, 4)):
+            if box is None:
+                continue
+            toc.insert_link({
+                "kind": fitz.LINK_GOTO,
+                "from": fitz.Rect(
+                    box.x0 - pad, box.y0 - pad, box.x1 + pad, box.y1 + pad,
+                ),
+                "page": pno,
+                "to": at,
+                "zoom": 0,
+            })
+            linked += 1
+        # 章首大标题跳回卷目的那一条
+        doc[pno].insert_link({
+            "kind": fitz.LINK_GOTO,
+            "from": head,
+            "page": TOC_PNO,
+            "to": fitz.Point(0, max(title_rect.y0 - 40, 0)),
+            "zoom": 0,
+        })
+        linked += 1
+    return linked, missed
+
+
 def insert_toc_page(doc: fitz.Document, starts: list[tuple[int, str]]) -> None:
     """在封面之后插入一页卷目。starts 为未插页时的章首页码。"""
-    page = doc.new_page(pno=1)
+    page = doc.new_page(pno=TOC_PNO)
     r = page.rect
     page.draw_rect(r, color=None, fill=WARM, overlay=False)
 
@@ -387,8 +499,8 @@ def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
     tmp.replace(pdf_path)
 
 
-def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> int:
-    """补书签、连引用跳转，并把整份 PDF 压到最小。
+def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> tuple[int, int, list[str]]:
+    """补书签、连引用与卷目的跳转，并把整份 PDF 压到最小。
 
     use_objstms 会把字体描述、CID 宽度表、ToUnicode 这些「非流对象」也塞进
     压缩的对象流里——PDF 里这一堆元数据比正文本身还占地方。
@@ -402,6 +514,9 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> int:
     if toc:
         doc.set_toc(toc)
     linked = link_citations(doc)
+    # 卷目的链接必须排在 link_citations 之后：那个函数会先清掉全篇的
+    # GOTO 链接再重排引用，排在它前面做的卷目链接会被一起清掉。
+    toc_links, missed = link_toc(doc, starts)
     tmp = pdf_path.with_suffix(".outline.pdf")
     doc.save(
         tmp,
@@ -413,7 +528,7 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> int:
     )
     doc.close()
     tmp.replace(pdf_path)
-    return linked
+    return linked, toc_links, missed
 
 
 def main() -> int:
@@ -438,9 +553,15 @@ def main() -> int:
     tmp.replace(OUT_PDF)
 
     stamp(OUT_PDF, toc_pages=toc_pages)
-    linked = build_outline(OUT_PDF, toc_pages=toc_pages)
+    linked, toc_links, missed = build_outline(OUT_PDF, toc_pages=toc_pages)
     size_kb = OUT_PDF.stat().st_size // 1024
-    print(f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章, {linked} 条文献双向跳转)")
+    print(
+        f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章, "
+        f"{linked} 条文献双向跳转, {toc_links} 条卷目跳转)"
+    )
+    if missed:
+        print(f"警告：{len(missed)} 章没接上卷目：{'、'.join(missed)}", file=sys.stderr)
+        return 1
     return 0
 
 
