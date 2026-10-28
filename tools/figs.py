@@ -1086,12 +1086,168 @@ def fig12():
     return K.canvas(W, H, "".join(o), base="#2b2320", grain=0.12)
 
 
+def fig13():
+    """印路：8 笔账的定魂印结成树，验一笔 3 步到根；右边虚一笔演示添账换根。"""
+    W, H = 720, 528
+    CX = 360
+    lx = [CX + (i - 3.5) * 68 for i in range(8)]
+    leaf_top, leaf_h, leaf_w = 402, 74, 36
+    t1x = [(lx[i] + lx[i + 1]) / 2 for i in (0, 2, 4, 6)]
+    t2x = [(t1x[0] + t1x[1]) / 2, (t1x[2] + t1x[3]) / 2]
+    t1_y, t1_s = 330, 30
+    t2_y, t2_s = 232, 34
+    rt_y, rt_s = 120, 64
+    pick = 2
+    KNOB = 0.28
+    GHOST = "#8a7a63"
+
+    def geom(cx, cy, s):
+        return dict(cx=cx, cy=cy, s=s, top=cy - s / 2,
+                    apex=cy - s / 2 - 0.30 * s, l=cx - KNOB * s, r=cx + KNOB * s)
+
+    root = geom(CX, rt_y, rt_s)
+    t2 = [geom(x, t2_y, t2_s) for x in t2x]
+    t1 = [geom(x, t1_y, t1_s) for x in t1x]
+    leaves = [dict(cx=x, top=leaf_top) for x in lx]
+
+    links = [
+        (root, t2[0]), (root, t2[1]),
+        (t2[0], t1[0]), (t2[0], t1[1]), (t2[1], t1[2]), (t2[1], t1[3]),
+        (t1[0], leaves[0]), (t1[0], leaves[1]),
+        (t1[1], leaves[2]), (t1[1], leaves[3]),
+        (t1[2], leaves[4]), (t1[2], leaves[5]),
+        (t1[3], leaves[6]), (t1[3], leaves[7]),
+    ]
+    hot = {(id(root), id(t2[0])), (id(t2[0]), id(t1[1])), (id(t1[1]), id(leaves[pick]))}
+
+    def ay_of(node):
+        return node["apex"] if "apex" in node else leaf_top - 2.5
+
+    def cord(x1, y1, x2, y2, on=False, ghost=False):
+        if ghost:
+            return K.line(x1, y1, x2, y2, GHOST, 1.4, 0.8, dash="4 5")
+        if on:
+            return (K.line(x1, y1, x2, y2, "#eecb84", 8.0, 0.30) +
+                    K.line(x1, y1, x2, y2, K.GOLD, 2.8, 0.95))
+        return K.line(x1, y1, x2, y2, "#8a6238", 1.65, 0.95)
+
+    o = []
+    o.append(cord(CX, -2, CX, root["apex"]))
+
+    for a, b in links:
+        if (id(a), id(b)) in hot:
+            continue
+        o.append(cord(a["l"] if b["cx"] < a["cx"] else a["r"], a["top"], b["cx"], ay_of(b)))
+    for a, b in links:
+        if (id(a), id(b)) not in hot:
+            continue
+        o.append(cord(a["l"] if b["cx"] < a["cx"] else a["r"], a["top"], b["cx"], ay_of(b), True))
+
+    def seal_node(g, on, seed):
+        x, y, s = g["cx"] - g["s"] / 2, g["cy"] - g["s"] / 2, g["s"]
+        out = []
+        if on:
+            out.append(f'<ellipse cx="{g["cx"]}" cy="{g["cy"]}" rx="{s * 0.92:.1f}" '
+                       f'ry="{s * 0.92:.1f}" fill="url(#glow)" opacity="0.6"/>')
+            out.append(K.rect(x - 3.6, y - 3.6, s + 7.2, s + 7.2, fill="none",
+                              stroke="#c9a05a", sw=1.0, op=0.65))
+        out.append(K.seal_face(x, y, s, cells=3 if s < 40 else 5, fill=K.CINNABAR, seed=seed))
+        h = 0.30 * s
+        bw, tw = KNOB * s, 0.17 * s
+        out.append(K.pth(f"M{g['cx'] - bw} {y} C{g['cx'] - bw * 0.86} {y - h * 0.38} "
+                         f"{g['cx'] - tw * 1.12} {y - h * 0.64} {g['cx'] - tw} {y - h} "
+                         f"L{g['cx'] + tw} {y - h} C{g['cx'] + tw * 1.12} {y - h * 0.64} "
+                         f"{g['cx'] + bw * 0.86} {y - h * 0.38} {g['cx'] + bw} {y} Z",
+                         fill="#c8a05e" if on else "#b08a63", stroke=K.INK, w=0.9))
+        out.append(K.ell(g["cx"], y - h * 0.78, 2.0, 1.1, fill="#f8f3e7",
+                         stroke=K.INK, sw=0.45, op=0.75))
+        return "".join(out)
+
+    for i, g in enumerate(t1):
+        o.append(seal_node(g, i == 1, 21 + i))
+    for i, g in enumerate(t2):
+        o.append(seal_node(g, i == 0, 31 + i))
+    o.append(seal_node(root, True, 41))
+
+    # 叶子：一枚定魂印压在一张账条上
+    for i, lf in enumerate(leaves):
+        on = i == pick
+        x = lf["cx"] - leaf_w / 2
+        if on:
+            o.append(f'<ellipse cx="{lf["cx"]}" cy="{leaf_top + leaf_h / 2}" rx="36" ry="56" '
+                     f'fill="url(#glow)" opacity="0.45"/>')
+        o.append(K.rect(x, leaf_top, leaf_w, leaf_h,
+                        fill="#fffaf0" if on else "#faf0d8",
+                        stroke=K.GOLD if on else "#a07c4e", sw=1.3 if on else 1.15, rx=1.2))
+        o.append(K.seal_face(lf["cx"] - 10, leaf_top + 8, 20, cells=3, seed=7 + i))
+        for j in range(3):
+            ww = 18 - (j % 2) * 3
+            o.append(K.line(lf["cx"] - ww / 2, leaf_top + 38 + j * 8,
+                            lf["cx"] + ww / 2, leaf_top + 38 + j * 8,
+                            "#a89070", 0.95, 0.5 if on else 0.4))
+        o.append(K.circ(lf["cx"], leaf_top - 2.2, 2.4, fill=K.GOLD if on else "#bfa075",
+                        stroke=None, op=1.0 if on else 0.7))
+
+    # 右边虚一笔：后添的账，还没进树
+    nx = 666
+    x = nx - leaf_w / 2
+    o.append(K.rect(x, leaf_top, leaf_w, leaf_h, fill="none", stroke=GHOST,
+                    sw=1.25, op=0.85, rx=1.2))
+    o.append(f'<rect x="{x + 4}" y="{leaf_top + 4}" width="{leaf_w - 8}" height="{leaf_h - 8}" '
+             f'fill="none" stroke="{GHOST}" stroke-width="0.8" stroke-dasharray="3 4" opacity="0.55"/>')
+    o.append(K.seal_face(nx - 10, leaf_top + 8, 20, cells=3, fill="#c2b094", op=0.75, seed=3))
+    for j in range(3):
+        ww = 16 - (j % 2) * 3
+        o.append(K.line(nx - ww / 2, leaf_top + 38 + j * 8, nx + ww / 2,
+                        leaf_top + 38 + j * 8, GHOST, 0.9, 0.5, dash="3 4"))
+    o.append(K.circ(nx, leaf_top - 2.2, 2.4, fill="none", stroke=GHOST, sw=1.1, op=0.8))
+
+    # 新根：一枚还没盖下的印
+    gx, gy, gs = 620, 96, 44
+    o.append(K.cord if False else "")
+    o.append(cord(nx, leaf_top - 2.2, gx, gy + gs / 2, ghost=True))
+    o.append(cord(root["cx"] + rt_s / 2 + 8, rt_y, gx - gs / 2 - 4, gy, ghost=True))
+    o.append(f'<g transform="translate({gx - 40},{gy - 4}) rotate(-4)">'
+             f'<path d="M0 0 L10 -3.4 L3.4 4 Z" fill="{GHOST}" opacity="0.9"/></g>')
+    o.append(K.seal_face(gx - gs / 2, gy - gs / 2, gs, cells=4, fill="#c2b094", op=0.75, seed=9))
+    o.append(f'<rect x="{gx - gs / 2 - 1}" y="{gy - gs / 2 - 1}" width="{gs + 2}" height="{gs + 2}" '
+             f'fill="none" stroke="{GHOST}" stroke-width="1.1" stroke-dasharray="4 4" opacity="0.9"/>')
+
+    steps = [
+        ((leaves[pick]["cx"], leaf_top - 2.5), (t1[1]["l"], t1[1]["top"])),
+        ((t1[1]["cx"], t1[1]["apex"]), (t2[0]["r"], t2[0]["top"])),
+        ((t2[0]["cx"], t2[0]["apex"]), (root["l"], root["top"])),
+    ]
+    for i, (a, b) in enumerate(steps):
+        px = a[0] + (b[0] - a[0]) * 0.42
+        py = a[1] + (b[1] - a[1]) * 0.42
+        o.append(K.circ(px, py, 10.2, fill="#f8f3e7", stroke=K.GOLD, sw=1.1))
+        o.append(K.txt(px, py + 4.5, str(i + 1), 13.2, K.GOLD, font=K.FS, weight=600))
+
+    ax = t2[0]["cx"] + (root["l"] - t2[0]["cx"]) * 0.5
+    ay = t2[0]["apex"] + (root["top"] - t2[0]["apex"]) * 0.5
+    import math as _m
+    ang = _m.degrees(_m.atan2(root["top"] - t2[0]["apex"], root["l"] - t2[0]["cx"]))
+    o.append(f'<g transform="translate({ax:.1f},{ay:.1f}) rotate({ang:.1f})">'
+             f'<path d="M-5.8 -3.9 L3.5 0 L-5.8 3.9 Z" fill="{K.GOLD}"/></g>')
+
+    # 标注
+    o.append(K.txt(100, 424, "定魂印", 13.0, K.SOFT, font=K.FS, anchor="end", ls=1.2))
+    o.append(K.line(102, 420, 110, 420, K.SOFT, 0.7, 0.45))
+    o.append(K.txt(CX - 48, 71, "根印", 16.5, K.CINNABAR, font=K.FS, anchor="end", ls=2.2))
+    o.append(K.txt(gx, 49, "新根印", 13.5, GHOST, font=K.FS, ls=1.5))
+    o.append(K.txt(leaves[pick]["cx"], 504, "此页", 15.5, K.CINNABAR, font=K.FS, ls=2))
+    o.append(K.txt(leaves[pick + 1]["cx"], 504, "兄弟页", 15.5, K.OCHRE, font=K.FS, ls=1))
+    o.append(K.txt(nx, 504, "新页", 14, GHOST, font=K.FS, ls=1.5))
+    return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.42)
+
+
 NAMES = {
     "fig00": "fig00_wanjuan", "fig01": "fig01_yinlian", "fig02": "fig02_xuebeng",
     "fig03": "fig03_jianfeng", "fig04": "fig04_kaishan", "fig05": "fig05_fuji",
     "fig06": "fig06_sanqi", "fig07": "fig07_zhuanlun", "fig08": "fig08_zhenfa",
     "fig09": "fig09_merkle", "fig10": "fig10_zhaoyao", "fig11": "fig11_sanyao",
-    "fig12": "fig12_jingui",
+    "fig12": "fig12_jingui", "fig13": "fig13_yinlu",
 }
 
 if __name__ == "__main__":
