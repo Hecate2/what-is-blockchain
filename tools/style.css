@@ -97,11 +97,9 @@ body {
 }
 
 /* ===== 章节标题 ===== */
-/* 章不另起页，靠段前留白把新章从上一章里托出来，约 3 行正文。
-   这里的空白用 padding 而不是 margin：分页时 margin 会被截断，
-   章题就会被硬挤到页脚、紧贴上一段；padding 属于盒子本身，
-   放不下就整块后移，留白始终在。
-   章题与紧随的一段再由 .chap-open 绑在一起，避免只剩标题落在页脚。 */
+/* 章不另起页时，靠上一段的段后留白把新章托出来，约 3 行正文。
+   留白挂在上一段而不是标题上：章若正好落在页首，那段留白随分页
+   一起被截掉，标题就不会顶着几行空白起排；挂在标题上则一定会空。 */
 h1 {
   break-before: auto;
   text-align: center;
@@ -110,7 +108,6 @@ h1 {
   letter-spacing: 5px;
   text-indent: 5px;
   color: #2b2620;
-  padding-top: 88px;
   margin: 0 0 30px;
   line-height: 1.5;
 }
@@ -120,10 +117,14 @@ h1 {
   page-break-inside: avoid;
 }
 
-/* --chapter-break：每章另起一页，留白由页面顶端给出 */
+/* 章前留白：只在这一段后面紧跟新章的段落上生效 */
+body:not(.chapter-break) *:has(+ .chap-open) {
+  margin-bottom: 88px;
+}
+
+/* --chapter-break：每章另起一页，页面顶端本身就是分界 */
 body.chapter-break h1 {
   break-before: page;
-  padding-top: 0;
 }
 
 /* --casebox-break：案卷框整块走，不许跨页 */

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """README.md -> HTML -> PDF（《天枢账簿》暖纸书式）。
 
-用法：python3 tools/build_pdf.py [--chapter-break] [--casebox-break]
-     默认新章与案卷都允许跨页；加 --chapter-break 让每章另起一页，
-     加 --casebox-break 让案卷框整块不拆。
+用法：python3 tools/build_pdf.py [--no-chapter-break] [--no-casebox-break]
+     默认每章另起一页、案卷框整块不拆；加 --no-chapter-break 让新章接着正文排，
+     加 --no-casebox-break 允许案卷框跨页拆开。
 产物：天枢账簿.pdf（仓库根目录），中间产物在 build/。
 """
 import argparse
@@ -29,19 +29,19 @@ FIG_QUALITY = 78      # JPEG 质量：线稿接受少量损失以压缩体积
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """两个断页开关默认都关：新章、案卷都顺着正文走。"""
+    """两个开关默认都开：整本按书的样子排，章起新页、案卷整块。"""
     ap = argparse.ArgumentParser(description="把 README.md 排成 PDF")
     ap.add_argument(
         "--chapter-break",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="每章另起一页（默认不换页，用段前留白分隔）",
+        default=True,
+        help="每章另起一页（默认开；用 --no-chapter-break 让新章接着正文）",
     )
     ap.add_argument(
         "--casebox-break",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="案卷框整块不跨页（默认放行跨页）",
+        default=True,
+        help="案卷框整块不跨页（默认开；用 --no-casebox-break 放行跨页）",
     )
     return ap.parse_args(argv)
 
@@ -137,7 +137,11 @@ def transform(frag: str, raster: dict[str, str]) -> str:
             tail = re.sub(r"^<hr[^>]*>\s*", "", tail)
             frag = '<div class="cover">\n' + head + "\n</div>\n" + tail
 
-    # 1b) 封面署名：只进 PDF，不动 README 正文
+    # 1b) README 里分章的 --- 变成 <hr>，样式表里已 display:none。
+    #     留着它会挡在 .chap-open 前面，章前留白的选择器就选不中上一段了。
+    frag = re.sub(r"<hr[^>]*>\s*", "", frag)
+
+    # 1c) 封面署名：只进 PDF，不动 README 正文
     frag = re.sub(
         r"(</h2>)",
         r'\1\n<p class="byline">Hecate2<span class="by-role">著</span></p>',
