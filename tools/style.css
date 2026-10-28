@@ -27,6 +27,7 @@ body {
 
 .cover h1 {
   break-before: auto;
+  padding-top: 0;
   font-size: 38pt;
   letter-spacing: 16px;
   text-indent: 16px;
@@ -96,16 +97,27 @@ body {
 }
 
 /* ===== 章节标题 ===== */
+/* 章不另起页，靠上下留白把新章从上一章里托出来。
+   这里的空白用 padding 而不是 margin：分页时 margin 会被截断，
+   章题就会被硬挤到页脚、紧贴上一段；padding 属于盒子本身，
+   放不下就整块挪到下一页，留白始终在。
+   章题与紧随的一段再由 .chap-open 绑在一起，避免只剩标题落在页脚。 */
 h1 {
-  break-before: page;
+  break-before: auto;
   text-align: center;
   font-size: 19pt;
   font-weight: 600;
   letter-spacing: 5px;
   text-indent: 5px;
   color: #2b2620;
-  margin: 24px 0 30px;
+  padding-top: 112px;
+  margin: 0 0 30px;
   line-height: 1.5;
+}
+
+.chap-open {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 h1::after {

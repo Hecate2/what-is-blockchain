@@ -166,6 +166,15 @@ def transform(frag: str, raster: dict[str, str]) -> str:
         "<p><strong>关于数据时效</strong>",
         '<p class="data-note"><strong>关于数据时效</strong>',
     )
+
+    # 7) 章题与紧随的一段绑成一块：章可以落在页中间，但不能只剩标题在页脚。
+    #    章题只含纯文本，用 [^<]* 卡死，免得正则回溯到下一个 h1，把封面也裹进来。
+    frag = re.sub(
+        r"(<h1[^>]*>[^<]*</h1>)\s*(<p[^>]*>.*?</p>)",
+        r'<div class="chap-open">\1\2</div>',
+        frag,
+        flags=re.S,
+    )
     return frag
 
 
@@ -475,6 +484,14 @@ def insert_toc_page(doc: fitz.Document, starts: list[tuple[int, str]]) -> None:
 def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
     doc = fitz.open(pdf_path)
     starts = chapter_starts(doc, skip=1 + toc_pages)
+    # 章可以落在页中，页眉认的却是页首那一章：章题不在页顶时，
+    # 本页仍算上一章，下一页才换眉。判据是章题距页顶的距离，
+    # 页顶起排的章题带 84pt 上留白，落在 141 上下；页中的远低于此。
+    head_from: list[tuple[int, str]] = []
+    for pno, title in starts:
+        rect = heading_rect(doc[pno], title)
+        at_top = rect is not None and rect.y0 < 200
+        head_from.append((pno if at_top else pno + 1, title))
     for i, page in enumerate(doc):
         r = page.rect
         # 暖纸底色垫在内容之下（封面也铺）
@@ -482,7 +499,7 @@ def stamp(pdf_path: pathlib.Path, toc_pages: int) -> None:
         if i < BODY_START:
             continue  # 封面、卷目、题记：不排页眉页脚，也不编页码
         chapter = ""
-        for pno, title in starts:
+        for pno, title in head_from:
             if pno <= i:
                 chapter = title
             else:
