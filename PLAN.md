@@ -146,6 +146,7 @@ PDF 不进仓库（`.gitignore` 里挡掉）。`build/article.html` 留在 build
 1. **插图先栅格化再交给浏览器。** 带 pattern 与渐变的 SVG 会被 Chrome 切成十几条横向碎图，各带一张透明掩膜，既糊又费空间。`rsvg-convert` 按版面显示宽度（约 150dpi）渲成 PNG，Pillow 压成单张 JPEG，浏览器就原样以 DCTDecode 嵌进去：一张图、一个流，比原来清楚，也更小。需要 `rsvg-convert`（librsvg）与 Pillow。
 2. **卷目引线用一条虚线**，不再逐点画圆。
 3. **收尾用对象流压缩**（`use_objstms`）。字体描述、CID 宽度表、ToUnicode 这些非流对象比正文本身还占地方，进对象流后才压得下去。
+4. **合并宋体子集。** Chrome 会把同一套宋体拆成 22 个 Type0 子集。`tools/merge_fonts.py` 从每个子集收集 glyph id，按常规/粗体求并集，用系统 `Songti.ttc` 按相同 gid 子集化并保留编号，再把旧 Type0 的 `DescendantFonts` 与 `ToUnicode` 指向合并字体。文字流一个字节都不动，版面与复制出的文字不变。22 个子集并为 2 个，PDF 从 1.61 MB 降到 1.20 MB。不要按 ToUnicode 重排 glyph id：Chrome 的 ToUnicode 会把一批汉字映射成康熙部首，照它重编号会把正文打乱。
 
 正文上标 `[n]` 与文末参考文献之间是双向跳转。Chrome 自己会给 `href="#refN"` 生成跳转，但它按内容区坐标算落点，漏了页面上边距，实际偏高约 59pt（一行多），所以整片删掉重连：正文标号跳到条目，条目序号跳回**第一次引用它**的地方。标号还要 `white-space: nowrap`，否则 `[16]` 会被拆成「[1」换行「6]」，既难看也找不到。
 

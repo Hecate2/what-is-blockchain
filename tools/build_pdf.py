@@ -13,6 +13,8 @@ import sys
 import fitz  # PyMuPDF
 from PIL import Image
 
+from merge_fonts import merge_songti_fonts
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 OUT_PDF = ROOT / "天枢账簿.pdf"
@@ -60,7 +62,7 @@ def rasterize_images() -> dict[str, str]:
 
     Chrome 打印时会把带 pattern/渐变填充的 SVG 切成十几条横向碎图（各带一张
     SMask），既糊又占空间。这里按版面显示宽度先栅格化一次，交给浏览器一张
-    定宽的 JPEG，它就会原样以 DCTDecode 嵌进去：一张图、一个流、约 190dpi。
+    定宽的 JPEG，它就会原样以 DCTDecode 嵌进去：一张图、一个流、约 150dpi。
     """
     cache = BUILD / "raster"
     cache.mkdir(parents=True, exist_ok=True)
@@ -554,6 +556,11 @@ def main() -> int:
 
     stamp(OUT_PDF, toc_pages=toc_pages)
     linked, toc_links, missed = build_outline(OUT_PDF, toc_pages=toc_pages)
+    try:
+        merge_songti_fonts(OUT_PDF)
+    except Exception as exc:
+        print(f"字体合并失败：{exc}", file=sys.stderr)
+        return 1
     size_kb = OUT_PDF.stat().st_size // 1024
     print(
         f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章, "
