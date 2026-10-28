@@ -1242,12 +1242,212 @@ def fig13():
     return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.42)
 
 
+# ---------------------------------------------------------------- 14 钟面
+def fig14():
+    """模 23 之后的剑脊：y²=x³+7 的解只落在 23×23 格点上，上下两点成对。"""
+    P, cell = 23, 19
+    W, H = 720, 600
+    gx, gy = 66, 104
+    side = P * cell
+    o = []
+
+    def cx(x):
+        return gx + (x + 0.5) * cell
+
+    def cy(y):
+        return gy + (P - 1 - y + 0.5) * cell
+
+    sols = {(x, y) for x in range(P) for y in range(P) if (y * y - (x ** 3 + 7)) % P == 0}
+
+    def lab(x, y, s, size, color, anchor="middle"):
+        return (f'<text x="{x:.1f}" y="{y:.1f}" font-family="{K.FK}" font-size="{size}" '
+                f'font-weight="600" fill="{color}" stroke="{K.WHITE}" stroke-width="3.2" '
+                f'paint-order="stroke" text-anchor="{anchor}">{s}</text>')
+
+    # 碑框与格线
+    o.append(K.rect(gx - 14, gy - 14, side + 28, side + 28, fill="#faf4e6", stroke=K.INK, sw=1.7))
+    for i in range(P + 1):
+        o.append(K.line(gx + i * cell, gy, gx + i * cell, gy + side, "#8d8168", 0.7, 0.30))
+        o.append(K.line(gx, gy + i * cell, gx + side, gy + i * cell, "#8d8168", 0.7, 0.30))
+
+    # 不是解的格点：一点灰
+    for x in range(P):
+        for y in range(P):
+            if (x, y) not in sols:
+                o.append(K.circ(cx(x), cy(y), 1.1, fill=K.ASH, stroke=None, op=0.5))
+
+    # 挑一对上下点，画一条金虚线
+    pair = None
+    for x in range(3, P):
+        ys = sorted(y for (xx, y) in sols if xx == x)
+        if len(ys) == 2 and ys[0] >= 3 and ys[1] <= P - 4:
+            pair = (x, ys[0], ys[1])
+            break
+    if pair:
+        x, y1, y2 = pair
+        o.append(K.line(cx(x), cy(y1), cx(x), cy(y2), K.GOLD, 1.8, 0.85, dash="7 6"))
+        o.append(lab(cx(x) + 16, cy(y1) + 4, "y", 13, K.GOLD, "start"))
+        o.append(lab(cx(x) + 16, cy(y2) + 4, "p − y", 13, K.GOLD, "start"))
+
+    # 解：朱点（先一圈白光，再点朱）
+    for (x, y) in sorted(sols):
+        o.append(K.circ(cx(x), cy(y), 8.8, fill=K.WHITE, stroke=None, op=0.92))
+    for (x, y) in sorted(sols):
+        o.append(K.circ(cx(x), cy(y), 5.2, fill=K.CINNABAR, stroke=K.WHITE, sw=1.3))
+
+    # 刻度：轴上只标数
+    for x in range(P):
+        color, size = (K.GOLD, 11.5) if (pair and x == pair[0]) else (K.SOFT, 9.5)
+        o.append(K.txt(cx(x), gy + side + 30, str(x), size, color, font=K.FS))
+    for y in range(P):
+        o.append(K.txt(59, cy(y) + 3.5, str(y), 9.5, K.SOFT, font=K.FS))
+    o.append(K.txt(gx + side + 24, gy + side + 30, "x", 11, K.SOFT, font=K.FS))
+    o.append(K.txt(59, gy - 4, "y", 11, K.SOFT, font=K.FS))
+
+    # 题与方程
+    o.append(K.txt(66, 76, "钟面上的银痕", 18, K.INK, font=K.FK, anchor="start", ls=5))
+    o.append(K.txt(654, 76, "y² = x³ + 7 （mod 23）", 16, K.GOLD, font=K.FK, anchor="end", ls=1))
+
+    # 右栏：一面二十三刻的钟
+    dcx, dcy, dr = 616, 178, 56
+    o.append(K.circ(dcx, dcy, dr, fill="#faf4e6", stroke=K.INK, sw=1.4))
+    for k in range(P):
+        a = math.radians(-90 + k * 360.0 / P)
+        r0 = dr - (9.5 if k == 0 else 6.5)
+        x1, y1 = dcx + r0 * math.cos(a), dcy + r0 * math.sin(a)
+        x2, y2 = dcx + (dr - 1.5) * math.cos(a), dcy + (dr - 1.5) * math.sin(a)
+        o.append(K.line(x1, y1, x2, y2, K.GOLD if k == 0 else K.OCHRE,
+                        2.0 if k == 0 else 0.9, 0.95 if k == 0 else 0.55))
+    o.append(K.txt(dcx, dcy - 32, "0", 12, K.SOFT, font=K.FS))
+    # 走到 23 就回到 0：一段带箭头的虚弧
+    a0 = math.radians(-90 - 360.0 / P)
+    ax, ay = dcx + 64 * math.cos(a0), dcy + 64 * math.sin(a0)
+    o.append(K.pth(f"M{ax:.1f} {ay:.1f} A64 64 0 0 1 {dcx} {dcy - 64}",
+                   stroke=K.GOLD, w=1.7, op=0.9, dash="6 5"))
+    o.append(K.pth(f"M{dcx + 5} {dcy - 64} L{dcx - 4} {dcy - 68.5} L{dcx - 4} {dcy - 59.5} Z",
+                   fill=K.GOLD, stroke=None))
+    o.append(K.txt(dcx, 258, "走到 23 就回到 0", 11.5, K.SOFT, font=K.FK))
+
+    notes = [(300, "格子只有 23 × 23 个"), (327, "落在格上的点，就是曲线"),
+             (358, "上下两点成一对"), (385, "y 与 p − y"),
+             (416, "真的 p 有 256 位"), (443, "点多到数不清")]
+    for yy, s in notes:
+        o.append(K.txt(dcx, yy, s, 12.5, K.INK if yy in (300, 327, 416) else K.SOFT, font=K.FK))
+
+    # 落款
+    o.append(K.rect(594, 486, 40, 40, fill=K.CINNABAR, stroke=None, op=0.85))
+    o.append(K.rect(597, 489, 34, 34, fill="none", stroke=K.WHITE, sw=1.1, op=0.7))
+    o.append(K.seal_script(614, 506, 34))
+    return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.42)
+
+
+# ---------------------------------------------------------------- 15 单页验法
+def fig15():
+    """两条验法：阁里一页一页单验（各对各的）；现算上一页去对下一页页眉（没人走过）。"""
+    W, H = 720, 600
+    cw, ch = 236, 330
+    lx, rx = 46, 410
+    top = 108
+    fy = top + ch - 58
+    o = []
+
+    def head(px, py, ang_deg, color, L=14.0, Wd=9.0):
+        a = math.radians(ang_deg)
+        ux, uy = math.cos(a), math.sin(a)
+        nx, ny = -uy, ux
+        tx, ty = px + ux * L / 2, py + uy * L / 2
+        bx, by = px - ux * L / 2, py - uy * L / 2
+        return K.pth(f"M{tx:.1f} {ty:.1f} L{bx + nx * Wd / 2:.1f} {by + ny * Wd / 2:.1f} "
+                     f"L{bx - nx * Wd / 2:.1f} {by - ny * Wd / 2:.1f} Z", fill=color, stroke=None)
+
+    def badge(px, py, ok, r=14.0):
+        col = K.MALACH if ok else K.CINNABAR
+        out = [K.circ(px, py, r, fill=K.WHITE, stroke=col, sw=2.2)]
+        if ok:
+            out.append(K.pth(f"M{px - r * 0.52:.1f} {py:.1f} L{px - r * 0.16:.1f} {py + r * 0.44:.1f} "
+                             f"L{px + r * 0.56:.1f} {py - r * 0.5:.1f}", stroke=col, w=2.6))
+        else:
+            out.append(K.line(px - r * 0.44, py - r * 0.44, px + r * 0.44, py + r * 0.44, col, 2.6))
+            out.append(K.line(px + r * 0.44, py - r * 0.44, px - r * 0.44, py + r * 0.44, col, 2.6))
+        return "".join(out)
+
+    def card(x, idx, changed=False):
+        out = [K.rect(x, top, cw, ch, fill="#fffaf0", stroke=K.INK, sw=1.5, rx=2)]
+        # 页眉：前页之印
+        out.append(K.rect(x + 12, top + 14, cw - 24, 46, fill="#f6ecd6", stroke="#a07c4e", sw=1.0))
+        bx = x + 16
+        if idx == 0:
+            out.append(K.rect(bx, top + 22, 76, 30, fill="none", stroke=K.ASH, sw=1.1, op=0.9,
+                              rx=1.5))
+            out[-1] = out[-1].replace("/>", ' stroke-dasharray="4 4"/>')
+            out.append(K.txt(bx + 38, top + 43, "空", 14, K.ASH, font=K.FK))
+        else:
+            out.append(K.seal_face(bx + 4, top + 24, 26, cells=4, fill="#b8a88a", op=0.95, seed=5))
+            out.append(K.txt(bx + 56, top + 43, "旧印", 11, K.SOFT, font=K.FK))
+        out.append(K.txt(x + 104, top + 43, "前页之印", 12, K.SOFT, font=K.FK, anchor="start"))
+        # 本页文字
+        out.append(K.txt(x + 34, top + 76, "本页文字", 10, K.ASH, font=K.FK, anchor="start"))
+        for j in range(6):
+            yy = top + 88 + j * 27
+            ww = (cw - 52) - (j % 2) * 16
+            if changed and j == 2:
+                out.append(K.rect(x + 28, yy - 10, cw - 46, 19, fill=K.CINNABAR, stroke=None, op=0.10))
+                out.append(K.line(x + 34, yy, x + 34 + ww, yy, K.CINNABAR, 1.4, 0.9))
+                out.append((f'<text x="{x + cw - 26}" y="{yy - 5}" font-family="{K.FS}" '
+                            f'font-size="11" fill="{K.CINNABAR}" stroke="{K.WHITE}" stroke-width="3" '
+                            f'paint-order="stroke" text-anchor="end">743 → 744</text>'))
+            else:
+                out.append(K.line(x + 34, yy, x + 34 + ww, yy, "#a89070", 1.1, 0.55))
+        # 页脚：本页之印
+        out.append(K.rect(x + 12, fy, cw - 24, 44, fill="#f6ecd6", stroke="#a07c4e", sw=1.0))
+        out.append(K.txt(x + 92, fy + 27,
+                         "本页之印（新算）" if idx == 0 else "本页之印",
+                         12, K.SOFT, font=K.FK))
+        seal = K.seal_face(x + cw - 56, fy + 7, 30, cells=5,
+                           fill=K.CINNABAR, op=1.0, seed=7 + idx)
+        out.append(seal)
+        return "".join(out)
+
+    o.append(K.txt(360, 62, "同一条账，两种验法", 17, K.INK, font=K.FK, ls=4))
+    o.append(K.txt(lx + cw / 2, 96, "第一页 · 创世页", 15, K.INK, font=K.FK))
+    o.append(K.txt(rx + cw / 2, 96, "第二页", 15, K.INK, font=K.FK))
+    o.append(card(lx, 0, changed=True))
+    o.append(card(rx, 1))
+
+    # 红线：现算第一页的印，去对第二页页眉的旧数。这条路没人走过。
+    o.append(K.pth("M260 402 C 330 384 352 230 408 152", stroke=K.CINNABAR, w=2.2,
+                   op=0.95, dash="8 7"))
+    o.append(head(414, 147, -52, K.CINNABAR))
+    o.append(badge(340, 299, False, r=15))
+
+    # 绿线：页眉旧数 + 本页文字，一路算到页脚，对得上。
+    o.append(K.pth(f"M{lx + cw + 152} 168 L{lx + cw + 152} 350 Q{lx + cw + 152} 386 "
+                   f"{lx + cw + 188} 388 L580 388", stroke=K.MALACH, w=2.0, op=0.95))
+    o.append(head(586, 391, 8, K.MALACH))
+
+    # 卡下小注
+    o.append(K.txt(lx + cw / 2, 460, "全阁从第二页验起，这页没人验", 12, K.ASH, font=K.FK))
+    o.append(badge(rx + 96, 456, True, r=12))
+    o.append(K.txt(rx + 114, 460, "单页自验，算得出来就验讫", 11.5, K.MALACH, font=K.FK,
+                   anchor="start"))
+
+    # 图例
+    o.append(badge(54, 490, True, r=9))
+    o.append(K.txt(70, 494, "阁里的验法：拿本页页眉抄来的旧数，只验本页，算得出来就算过。",
+                   12.5, K.MALACH, font=K.FK, anchor="start"))
+    o.append(badge(54, 520, False, r=9))
+    o.append(K.txt(70, 524, "全账验法：现算上一页的印，去对下一页页眉。这条路，三千年来没人走过。",
+                   12.5, K.CINNABAR, font=K.FK, anchor="start"))
+    return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.42)
+
+
 NAMES = {
     "fig00": "fig00_wanjuan", "fig01": "fig01_yinlian", "fig02": "fig02_xuebeng",
     "fig03": "fig03_jianfeng", "fig04": "fig04_kaishan", "fig05": "fig05_fuji",
     "fig06": "fig06_sanqi", "fig07": "fig07_zhuanlun", "fig08": "fig08_zhenfa",
     "fig09": "fig09_merkle", "fig10": "fig10_zhaoyao", "fig11": "fig11_sanyao",
-    "fig12": "fig12_jingui", "fig13": "fig13_yinlu",
+    "fig12": "fig12_jingui", "fig13": "fig13_yinlu", "fig14": "fig14_zhongmian",
+    "fig15": "fig15_danye",
 }
 
 if __name__ == "__main__":
