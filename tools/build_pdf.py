@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """README.md -> HTML -> PDF（《天枢账簿》暖纸书式）。
 
-用法：python3 tools/build_pdf.py
+用法：python3 tools/build_pdf.py [--chapter-break] [--casebox-break]
+     默认新章与案卷都允许跨页；加 --chapter-break 让每章另起一页，
+     加 --casebox-break 让案卷框整块不拆。
 产物：天枢账簿.pdf（仓库根目录），中间产物在 build/。
 """
+import argparse
 import io
 import pathlib
 import re
@@ -23,6 +26,24 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PAPER = "#f8f3e7"      # 与 stamp() 里铺的暖纸底色一致
 FIG_W_PX = 860       # 图在版面上宽约 415pt，约 150dpi，够清晰且省体积
 FIG_QUALITY = 78      # JPEG 质量：线稿接受少量损失以压缩体积
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """两个断页开关默认都关：新章、案卷都顺着正文走。"""
+    ap = argparse.ArgumentParser(description="把 README.md 排成 PDF")
+    ap.add_argument(
+        "--chapter-break",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="每章另起一页（默认不换页，用段前留白分隔）",
+    )
+    ap.add_argument(
+        "--casebox-break",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="案卷框整块不跨页（默认放行跨页）",
+    )
+    return ap.parse_args(argv)
 
 
 def chapters() -> list[str]:
@@ -178,8 +199,9 @@ def transform(frag: str, raster: dict[str, str]) -> str:
     return frag
 
 
-def write_html(frag: str) -> pathlib.Path:
+def write_html(frag: str, body_class: str = "") -> pathlib.Path:
     css = (ROOT / "tools" / "style.css").read_text(encoding="utf-8")
+    cls = f' class="{body_class}"' if body_class else ""
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -190,7 +212,7 @@ def write_html(frag: str) -> pathlib.Path:
 {css}
 </style>
 </head>
-<body>
+<body{cls}>
 {frag}
 </body>
 </html>
@@ -550,16 +572,23 @@ def build_outline(pdf_path: pathlib.Path, toc_pages: int) -> tuple[int, int, lis
     return linked, toc_links, missed
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     problem = citation_order_problem()
     if problem:
         print(f"参考文献编号不合规：{problem}", file=sys.stderr)
         print("先跑 python3 tools/renumber_refs.py", file=sys.stderr)
         return 1
 
+    classes = []
+    if args.chapter_break:
+        classes.append("chapter-break")
+    if args.casebox_break:
+        classes.append("casebox-break")
+
     raster = rasterize_images()
     frag = transform(md_to_fragment(), raster)
-    html_path = write_html(frag)
+    html_path = write_html(frag, " ".join(classes))
     chrome_to_pdf(html_path)
 
     toc_pages = 1
@@ -579,9 +608,13 @@ def main() -> int:
         print(f"字体合并失败：{exc}", file=sys.stderr)
         return 1
     size_kb = OUT_PDF.stat().st_size // 1024
+    breaks = (
+        f"新章{'另起页' if args.chapter_break else '不换页'}，"
+        f"案卷{'不跨页' if args.casebox_break else '可跨页'}"
+    )
     print(
         f"OK -> {OUT_PDF} ({size_kb} KB, {len(starts)} 章, "
-        f"{linked} 条文献双向跳转, {toc_links} 条卷目跳转)"
+        f"{linked} 条文献双向跳转, {toc_links} 条卷目跳转; {breaks})"
     )
     if missed:
         print(f"警告：{len(missed)} 章没接上卷目：{'、'.join(missed)}", file=sys.stderr)

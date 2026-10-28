@@ -97,10 +97,10 @@ body {
 }
 
 /* ===== 章节标题 ===== */
-/* 章不另起页，靠上下留白把新章从上一章里托出来。
+/* 章不另起页，靠段前留白把新章从上一章里托出来，约 3 行正文。
    这里的空白用 padding 而不是 margin：分页时 margin 会被截断，
    章题就会被硬挤到页脚、紧贴上一段；padding 属于盒子本身，
-   放不下就整块挪到下一页，留白始终在。
+   放不下就整块后移，留白始终在。
    章题与紧随的一段再由 .chap-open 绑在一起，避免只剩标题落在页脚。 */
 h1 {
   break-before: auto;
@@ -110,12 +110,24 @@ h1 {
   letter-spacing: 5px;
   text-indent: 5px;
   color: #2b2620;
-  padding-top: 112px;
+  padding-top: 88px;
   margin: 0 0 30px;
   line-height: 1.5;
 }
 
 .chap-open {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* --chapter-break：每章另起一页，留白由页面顶端给出 */
+body.chapter-break h1 {
+  break-before: page;
+  padding-top: 0;
+}
+
+/* --casebox-break：案卷框整块走，不许跨页 */
+body.casebox-break blockquote.casebox {
   break-inside: avoid;
   page-break-inside: avoid;
 }
