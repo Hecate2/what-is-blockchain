@@ -366,6 +366,21 @@ pre, table, blockquote, figure, .fig {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+/* 案卷框例外：它动辄半页，整块推到下一页会在前一页留下半页空白。
+   放行跨页后，左红边和纸色背景顺着页缝续下去，断口不重复上下细边，
+   读起来仍是一卷摊开的纸。普通引语很短，照旧整块走。 */
+blockquote.casebox {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+/* 卷名那一行别单独留在页脚，至少带上正文开头 */
+blockquote.casebox > p:first-of-type {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 h1, h2, h3 {
   break-after: avoid;
   page-break-after: avoid;
