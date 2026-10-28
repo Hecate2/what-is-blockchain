@@ -19,8 +19,8 @@ OUT_PDF = ROOT / "天枢账簿.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 PAPER = "#f8f3e7"      # 与 stamp() 里铺的暖纸底色一致
-FIG_W_PX = 1100       # 图在版面上宽约 415pt，按 190dpi 出像素
-FIG_QUALITY = 88      # JPEG 质量：线稿偏高一点，避免边缘发糊
+FIG_W_PX = 860       # 图在版面上宽约 415pt，约 150dpi，够清晰且省体积
+FIG_QUALITY = 78      # JPEG 质量：线稿接受少量损失以压缩体积
 
 
 def chapters() -> list[str]:
