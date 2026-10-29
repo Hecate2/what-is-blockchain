@@ -26,6 +26,10 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PAPER = "#f8f3e7"      # 与 stamp() 里铺的暖纸底色一致
 FIG_W_PX = 860       # 图在版面上宽约 415pt，约 150dpi，够清晰且省体积
 FIG_QUALITY = 78      # JPEG 质量：线稿接受少量损失以压缩体积
+# 少数整版图字号小，单张提高分辨率，避免 PDF 里发糊。
+FIG_OVERRIDES = {
+    "fig16_nav.svg": (1800, 90),
+}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -90,15 +94,16 @@ def rasterize_images() -> dict[str, str]:
     out: dict[str, str] = {}
     for svg in sorted((ROOT / "img").glob("*.svg")):
         jpg = cache / (svg.stem + ".jpg")
+        width, quality = FIG_OVERRIDES.get(svg.name, (FIG_W_PX, FIG_QUALITY))
         if not jpg.exists() or jpg.stat().st_mtime < svg.stat().st_mtime:
             png = subprocess.run(
-                ["rsvg-convert", "-w", str(FIG_W_PX), "-b", PAPER, str(svg)],
+                ["rsvg-convert", "-w", str(width), "-b", PAPER, str(svg)],
                 capture_output=True,
                 check=True,
             ).stdout
             with Image.open(io.BytesIO(png)) as im:
                 im.convert("RGB").save(
-                    jpg, "JPEG", quality=FIG_QUALITY, optimize=True, progressive=False
+                    jpg, "JPEG", quality=quality, optimize=True, progressive=False
                 )
         out[f"img/{svg.name}"] = jpg.as_uri()
     return out

@@ -1427,13 +1427,123 @@ def fig15():
     return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.42)
 
 
+# ---------------------------------------------------------------- 16 墨三的图
+def fig16():
+    """墨三画在废账纸上的图：左为账簿家族树，右为天枢阁组织图。"""
+    W, H = 1120, 680
+    o = []
+
+    def panel(x, y, w, h):
+        return (K.rect(x + 5, y + 6, w, h, fill="#e8d8b6", stroke=None, op=0.32, rx=3)
+                + K.rect(x, y, w, h, fill="#fbf5e7", stroke="#b9a47c", sw=1.1, op=0.95, rx=3)
+                + K.rect(x + 6, y + 6, w - 12, h - 12, fill="none", stroke="#dccbaa",
+                         sw=0.6, op=0.55, rx=2))
+
+    def head(x, y, s, rule_w):
+        out = [K.rect(x, y - 34, 6, 38, fill=K.CINNABAR, stroke=None, op=0.92)]
+        out.append(K.txt(x + 20, y, s, 42, K.INK, font=K.FK, anchor="start", ls=4,
+                         weight="600"))
+        out.append(K.line(x, y + 18, x + rule_w, y + 18, K.GOLD, 1.0, 0.4))
+        return "".join(out)
+
+    def arrow(x, y0, y1, col=K.GOLD, w=2.0):
+        out = [K.line(x, y0, x, y1 - 9, col, w, 0.9)]
+        out.append(K.pth(f"M{x} {y1} L{x - 7} {y1 - 12} L{x + 7} {y1 - 12} Z",
+                         fill=col, stroke=None, op=0.92))
+        return "".join(out)
+
+    def ledger(x, y, w, h, title, sub, count, accent, ts=30):
+        out = [K.rect(x + 5, y + 6, w, h, fill="#e8d8b6", stroke=None, op=0.35, rx=2)]
+        out.append(K.rect(x, y, w, h, fill="#fffaf0", stroke=K.INK, sw=1.7, rx=2))
+        out.append(K.rect(x + 5, y + 5, w - 10, h - 10, fill="none", stroke="#c9b48d",
+                          sw=0.65, op=0.55, rx=1))
+        out.append(K.rect(x, y + 4, 6, h - 8, fill=accent, stroke=None, op=0.92))
+        out.append(K.txt(x + 28, y + h * 0.47, title, ts, K.INK, font=K.FK,
+                         anchor="start", ls=1.2, weight="600"))
+        if sub:
+            out.append(K.txt(x + 28, y + h * 0.78, sub, 18, K.SOFT, font=K.FS,
+                             anchor="start", ls=0.3, op=0.95))
+        if count:
+            out.append(K.txt(x + w - 24, y + h * 0.47, count, 24, accent, font=K.FS,
+                             anchor="end", ls=0.6, weight="600"))
+        return "".join(out)
+
+    def tag(x, y, w, h, name, note, accent):
+        return (K.rect(x + 4, y + 5, w, h, fill="#e8d8b6", stroke=None, op=0.32, rx=2)
+                + K.rect(x, y, w, h, fill="#fdf8ec", stroke="#c9b48d", sw=0.9, op=0.9, rx=2)
+                + K.rect(x, y + 4, 5, h - 8, fill=accent, stroke=None, op=0.85)
+                + K.txt(x + 20, y + 32, name, 24, K.INK, font=K.FK, anchor="start",
+                        ls=1.2, weight="600")
+                + K.txt(x + 20, y + 58, note, 17, K.SOFT, font=K.FS, anchor="start",
+                        ls=0.3, op=0.92))
+
+    def office(x, y, w, h, name):
+        return (K.rect(x + 4, y + 4, w, h, fill="#e8d8b6", stroke=None, op=0.3, rx=2)
+                + K.rect(x, y, w, h, fill="#fdf8ec", stroke="#a07c4e", sw=1.05, rx=2)
+                + K.txt(x + w / 2, y + h * 0.58, name, 23, K.INK, font=K.FK,
+                        ls=0.6, weight="600"))
+
+    # 两栏底板
+    o.append(panel(18, 18, 680, 644))
+    o.append(panel(716, 18, 386, 644))
+    o.append(head(46, 76, "账", 624))
+    o.append(head(744, 76, "阁", 330))
+
+    # 左：账簿家族树
+    o.append(ledger(208, 112, 300, 76, "祖本", "金匮 · 所有账的源头", "1",
+                    K.CINNABAR, ts=30))
+    o.append(arrow(358, 188, 214))
+    o.append(K.txt(372, 206, "抄", 18, K.OCHRE, font=K.FK, anchor="start", op=0.95))
+    o.append(ledger(173, 214, 370, 80, "母本", "藏经阁 · 祖本的第一部抄本", "1",
+                    K.OCHRE, ts=30))
+    o.append(arrow(358, 294, 322))
+    o.append(K.txt(372, 314, "分抄", 18, K.OCHRE, font=K.FK, anchor="start", op=0.95))
+    o.append(ledger(123, 322, 470, 84, "108 宗门总账", "一宗一本，共 108 本", "108",
+                    K.MALACH, ts=30))
+    o.append(arrow(358, 406, 436))
+    o.append(K.txt(372, 428, "再抄", 18, K.OCHRE, font=K.FK, anchor="start", op=0.95))
+    o.append(ledger(78, 436, 560, 88, "10000 抄本", "万份制度，分藏 108 宗", "10000",
+                    K.AZURITE, ts=32))
+
+    # 左：三种本子
+    o.append(tag(46, 552, 196, 76, "私册", "个人自留", K.CINNABAR))
+    o.append(tag(260, 552, 196, 76, "公册", "账房登记", K.OCHRE))
+    o.append(tag(474, 552, 196, 76, "官本", "誊清存档", K.AZURITE))
+
+    # 右：组织图
+    o.append(ledger(784, 108, 250, 76, "阁主", "", "", K.CINNABAR, ts=32))
+    o.append(arrow(909, 184, 212))
+    o.append(ledger(759, 212, 300, 84, "36 家上院", "议事 · 投票 · 定规矩", "",
+                    K.OCHRE, ts=28))
+    o.append(arrow(909, 296, 324))
+    o.append(ledger(759, 324, 300, 88, "108 宗门", "持总账 · 出抄手", "",
+                    K.MALACH, ts=28))
+
+    # 四房：从阁主右侧单独引一条线，表示直属
+    o.append(K.line(1034, 146, 1088, 146, K.GOLD, 1.6, 0.88))
+    o.append(K.line(1088, 146, 1088, 524, K.GOLD, 1.6, 0.88))
+    o.append(K.txt(909, 508, "四房", 28, K.CINNABAR, font=K.FK, ls=2.4, weight="600"))
+    o.append(K.line(733, 524, 1088, 524, K.GOLD, 1.8, 0.9))
+    o.append(K.circ(1088, 524, 4.2, fill=K.GOLD, stroke=None, op=0.9))
+    for i, name in enumerate(("执法堂", "印房", "抄算房", "藏经阁")):
+        cx = 774 + i * 90
+        o.append(K.line(cx, 524, cx, 540, K.GOLD, 1.4, 0.8))
+        o.append(office(cx - 42, 540, 84, 88, name))
+
+    # 右上小印
+    o.append(K.rect(1050, 38, 36, 36, fill=K.CINNABAR, stroke=None, op=0.82))
+    o.append(K.rect(1053, 41, 30, 30, fill="none", stroke=K.WHITE, sw=0.9, op=0.65))
+    o.append(K.txt(1068, 64, "枢", 21, K.WHITE, font=K.FK, ls=0.5))
+
+    return K.canvas(W, H, "".join(o), base="#f8f3e7", grain=0.38)
+
 NAMES = {
     "fig00": "fig00_wanjuan", "fig01": "fig01_yinlian", "fig02": "fig02_xuebeng",
     "fig03": "fig03_jianfeng", "fig04": "fig04_kaishan", "fig05": "fig05_fuji",
     "fig06": "fig06_sanqi", "fig07": "fig07_zhuanlun", "fig08": "fig08_zhenfa",
     "fig09": "fig09_merkle", "fig10": "fig10_zhaoyao", "fig11": "fig11_sanyao",
     "fig12": "fig12_jingui", "fig13": "fig13_yinlu", "fig14": "fig14_zhongmian",
-    "fig15": "fig15_danye",
+    "fig15": "fig15_danye", "fig16": "fig16_nav",
 }
 
 if __name__ == "__main__":

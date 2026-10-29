@@ -217,6 +217,11 @@ body {
   height: auto;
 }
 
+/* 墨三画的账与人是一张整版对照图，字号密，让它撑满版心。 */
+.figure-block img[src*="fig16_nav"] {
+  width: 100%;
+}
+
 .figcap {
   font-size: 10pt;
   color: #6b5d4a;
@@ -328,6 +333,17 @@ tbody td {
 tbody tr:last-child td { border-bottom: none; }
 tbody td:first-child, thead th:first-child { white-space: nowrap; }
 table code { font-size: 9pt; }
+
+/* 表后的口径说明必须跟着表走。案卷框允许跨页，但表与紧跟的一段
+   若被页缝拆开，读者会看到上一页一张表、下一页一段无主的注。 */
+blockquote.casebox table {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+blockquote.casebox table + p {
+  break-before: avoid;
+  page-break-before: avoid;
+}
 
 /* ===== 列表 ===== */
 ul, ol {
